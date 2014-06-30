@@ -29,7 +29,9 @@ for i in range(num_changepoints + 1):
                                                   innovation_covariance, 1))
 
     # Generate the data (currently just VAR(1) process).
-    Phi = np.array([[0.6, 0.2, 0], [0.2, 0.4, 0], [0.6, 0.2, 0.5]])
+    Phi = np.array([[0.6, 0.2, 0],
+                    [0.2, 0.4, 0],
+                    [0.6, 0.2, 0.5]])
     for t in range(n):
         datapoint = np.dot(Phi, data[(i*n) + t]) + innovations[t]
         data.append(datapoint.tolist())
