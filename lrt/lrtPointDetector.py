@@ -14,7 +14,7 @@ def calculateS(residuals, offset, length):
     sMatrix = np.zeros((residuals.shape[1], residuals.shape[1]))
     
     for i in range(offset, offset+length):
-        error = np.reshape(residuals[i], (residuals.shape[1], 1))    
+        error = np.reshape(residuals[i], (residuals.shape[1], 1))
         errorCov = np.dot(error, error.T)
 
         sMatrix += errorCov
@@ -32,14 +32,27 @@ def recursiveChangePointDetector(dataframe, p, q, results):
     model = modeler.fit()
     
     n = model.resid.shape[0]
+
+    # Pre-calculate covariances
+    covariances = []
+    for i in range(n):
+    	error = np.reshape(model.resid[i], (k, 1))
+    	errorCov = np.dot(error, error.T)
+    	covariances.append(errorCov)
     
     likelihoodRatioStats = np.zeros(n)
     sF = calculateS(model.resid, 0, n)
     sFullDet = np.linalg.det(sF)
 
-    for i in range(d, n - d):
-        s1 = calculateS(model.resid, 0, i)
-        s2 = calculateS(model.resid, i, n-i)
+    lastS1 = np.zeros((k,k))
+    lastS2 = float(n) * sF
+
+    for i in range(n):
+        lastS1 = lastS1 + covariances[i]
+        lastS2 = lastS2 - covariances[i]
+
+        s1 = (1./float(i+1)) * lastS1
+        s2 = (1./float(n-i)) * lastS2
 
         s1Det = np.linalg.det(s1)
         s2Det = np.linalg.det(s2)
@@ -50,10 +63,12 @@ def recursiveChangePointDetector(dataframe, p, q, results):
 
         likelihoodRatioStats[i] = n * math.log(ratio)
 
-    maxIndex = np.argmax(likelihoodRatioStats)
+    maxIndex = np.argmax(likelihoodRatioStats[d:n-d]) + d
     maxStat = likelihoodRatioStats[maxIndex]
 
-    print "Max:", maxStat, "occurs at:", maxIndex
+    testStat = np.max(likelihoodRatioStats[d:n-d])
+
+    print "Found Max:", testStat, "Max:", maxStat, "occurs at:", maxIndex
     
     criticalValue = critValueSim.getCriticalValue((k*(k+1)/2))
     if ( maxStat > criticalValue ):
