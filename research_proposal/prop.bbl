@@ -1,0 +1,15 @@
+\begin{thebibliography}{1}
+
+\bibitem{1468491}
+F.~Desobry, M.~Davy, and C.~Doncarli.
+\newblock {An online kernel change detection algorithm}.
+\newblock {\em Signal Processing, IEEE Transactions on}, 53(8):2961--2974, Aug.
+  2005.
+
+\bibitem{galeano2007covariance}
+P.~Galeano and D.~Pe\~{n}a.
+\newblock {Covariance changes detection in multivariate time series}.
+\newblock {\em Journal of Statistical Planning and Inference}, 137(1):194--211,
+  Jan. 2007.
+
+\end{thebibliography}

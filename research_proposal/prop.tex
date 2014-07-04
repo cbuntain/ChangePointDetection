@@ -1,0 +1,66 @@
+\title{A Comparison Between Offline and Online Multivariate Change-Point Detection Algorithms}
+\author{
+	Cody Buntain \\
+	\href{mailto:cbuntain@cs.umd.edu}{cbuntain@cs.umd.edu}
+	\and
+	Christopher Natoli \\
+	\href{mailto:chrisnatoli@gmail.com}{chrisnatoli@gmail.com}
+	\and
+	Miroslav Zivkovic \\
+	\href{mailto:M.Zivkovic@uva.nl}{M.Zivkovic@uva.nl}
+}
+\date{\today}
+
+\documentclass[10pt,letterpaper]{article}
+
+\usepackage{lscape}	% For landscape views
+\usepackage{fullpage}	% Give me 1in margins all around
+\usepackage{graphicx}	% For including pictures
+\usepackage[colorlinks=true,linkcolor=blue]{hyperref}	% For hyper links
+\usepackage{parskip}	% No paragraph indention
+\usepackage[small,compact]{titlesec}	% Less spacing between titles
+\usepackage{listings}	% For including code
+\usepackage{sgame}	% For typesetting games
+\usepackage{amsmath}	% for plain text in math mode
+\usepackage{algpseudocode}	% For pseudocode typesetting
+\usepackage[margin=1in]{geometry}
+
+\begin{document}
+
+\maketitle
+
+\section{Research Abstract}
+
+Change point detection has been an active area of research for several decades, has spanned numerous disciplines, and has been applied to financial analysis, cyber security, and climatology just to name a few.
+With the advent of the Internet, virtual astronomical observatories, the Large Hadron Collider, genome sequencing, and other ``big data'' sources, however, we have already past the point where we can afford to store an entire data set and retrospectively analyze it completely in a reasonable period of time, and existing univariate approaches break down.
+Instead, online and streaming algorithms that process multivariate data are increasingly popular and are becoming more powerful.
+This departure represents a significant shift in change-point detection techniques, but relatively little research seems to exist regarding comparisons between older offline and newer online algorithms.
+This project seeks to bridge this gap between the old and new by comparing a set of change-point detection methods, containing both retrospective (i.e., offline) and streaming (online) approaches, across several data sets of increasing dimension and exploring the strengths and weaknesses among them.
+
+More specifically, we plan to compare four existing change-point detection algorithms: two offline approaches based on the likelihood ratio test (LRT) and cumulative sums of squares (CUSUM), and two online methods using support vector machines (SVMs) and Gaussian processes [tentatively].
+The expectation here is that offline methods will prove more powerful and accurate but will take much longer to process the data than online methods as the tradeoff.
+To obtain a more thorough picture of these techniques, we will further compare them across simulated data and four real data sets of increasing dimensionality: a bivariate sensor set from structural stress testing, a historical set of cryptocurrency prices across a small set of currency markets, \colorbox{red}{OTHER}, and a high-dimensional social media sentiment data set.
+From there, we will then explore methods one might use to circumvent these algorithms to compare their weaknesses.
+
+\subsection{Algorithm List}
+
+\begin{description}
+\item[Likelihood Ratio Test] The LRT statistic as outline by Galeano and Pe\~{n}o \cite{galeano2007covariance}.
+\item[Cumulative Sum of Squares] The CUSUM statistic as outline by Galeano and Pe\~{n}o \cite{galeano2007covariance}.
+\item[Kernel Change Detection (KD)] An SVM-based, non-parametric algorithm for change detection proposed by Desobry et al. \cite{1468491}.
+\item[Gaussian Processes] [tentative] (Saat\c{c}i, et. al.)
+\end{description}
+
+\subsection{Data Sets}
+
+\begin{description}
+\item[Bridge Data] Supplied bivariate sensor data for bridge structural stress analysis.
+\item[Historical Bitcoin Data] Bitcoin price data from 2010 to present averaged across exchanges and for several different currencies (e.g., US Dollar and the Euro).
+\item[OTHER] \colorbox{red}{OTHER}
+\item[Twitter Sentiment Data] Timed frequency information on a collection of sentiment-specific keywords within Twitter.
+\end{description}
+
+\bibliographystyle{abbrv}
+\bibliography{sources}
+
+\end{document}
