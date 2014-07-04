@@ -39,7 +39,7 @@ This project seeks to bridge this gap between the old and new by comparing a set
 
 More specifically, we plan to compare four existing change-point detection algorithms: two offline approaches based on the likelihood ratio test (LRT) and cumulative sums of squares (CUSUM), and two online methods using support vector machines (SVMs) and Gaussian processes [tentatively].
 The expectation here is that offline methods will prove more powerful and accurate but will take much longer to process the data than online methods as the tradeoff.
-To obtain a more thorough picture of these techniques, we will further compare them across simulated data and four real data sets of increasing dimensionality: a bivariate sensor set from structural stress testing, a historical set of cryptocurrency prices across a small set of currency markets, \colorbox{red}{OTHER}, and a high-dimensional social media sentiment data set.
+To obtain a more thorough picture of these techniques, we will further compare them across simulated data and three real data sets of increasing dimensionality: a bivariate sensor set from structural stress testing, a historical set of cryptocurrency prices across a small set of currency markets, and a high-dimensional social media sentiment data set.
 From there, we will then explore methods one might use to circumvent these algorithms to compare their weaknesses.
 
 \subsection{Algorithm List}
@@ -48,7 +48,7 @@ From there, we will then explore methods one might use to circumvent these algor
 \item[Likelihood Ratio Test] The LRT statistic as outline by Galeano and Pe\~{n}o \cite{galeano2007covariance}.
 \item[Cumulative Sum of Squares] The CUSUM statistic as outline by Galeano and Pe\~{n}o \cite{galeano2007covariance}.
 \item[Kernel Change Detection (KD)] An SVM-based, non-parametric algorithm for change detection proposed by Desobry et al. \cite{1468491}.
-\item[Gaussian Processes] [tentative] (Saat\c{c}i, et. al.)
+\item[Gaussian Processes] [tentative] \cite{saatcci2010gaussian}
 \end{description}
 
 \subsection{Data Sets}
@@ -56,7 +56,6 @@ From there, we will then explore methods one might use to circumvent these algor
 \begin{description}
 \item[Bridge Data] Supplied bivariate sensor data for bridge structural stress analysis.
 \item[Historical Bitcoin Data] Bitcoin price data from 2010 to present averaged across exchanges and for several different currencies (e.g., US Dollar and the Euro).
-\item[OTHER] \colorbox{red}{OTHER}
 \item[Twitter Sentiment Data] Timed frequency information on a collection of sentiment-specific keywords within Twitter.
 \end{description}
 
