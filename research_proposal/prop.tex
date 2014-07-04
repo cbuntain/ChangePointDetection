@@ -4,7 +4,7 @@
 	\href{mailto:cbuntain@cs.umd.edu}{cbuntain@cs.umd.edu}
 	\and
 	Christopher Natoli \\
-	\href{mailto:chrisnatoli@gmail.com}{chrisnatoli@gmail.com}
+	\href{mailto:chrisnatoli@gmail.com}{natoli@uchicago.edu}
 	\and
 	Miroslav Zivkovic \\
 	\href{mailto:M.Zivkovic@uva.nl}{M.Zivkovic@uva.nl}
@@ -13,14 +13,12 @@
 
 \documentclass[10pt,letterpaper]{article}
 
-\usepackage{lscape}	% For landscape views
 \usepackage{fullpage}	% Give me 1in margins all around
 \usepackage{graphicx}	% For including pictures
 \usepackage[colorlinks=true,linkcolor=blue]{hyperref}	% For hyper links
 \usepackage{parskip}	% No paragraph indention
 \usepackage[small,compact]{titlesec}	% Less spacing between titles
 \usepackage{listings}	% For including code
-\usepackage{sgame}	% For typesetting games
 \usepackage{amsmath}	% for plain text in math mode
 \usepackage{algpseudocode}	% For pseudocode typesetting
 \usepackage[margin=1in]{geometry}
@@ -37,7 +35,7 @@ Instead, online and streaming algorithms that process multivariate data are incr
 This departure represents a significant shift in change-point detection techniques, but relatively little research seems to exist regarding comparisons between older offline and newer online algorithms.
 This project seeks to bridge this gap between the old and new by comparing a set of change-point detection methods, containing both retrospective (i.e., offline) and streaming (online) approaches, across several data sets of increasing dimension and exploring the strengths and weaknesses among them.
 
-More specifically, we plan to compare four existing change-point detection algorithms: two offline approaches based on the likelihood ratio test (LRT) and cumulative sums of squares (CUSUM), and two online methods using support vector machines (SVMs) and Gaussian processes [tentatively].
+More specifically, we plan to compare four existing change-point detection algorithms that focuses on changes in covariance: two offline approaches based on the likelihood ratio test (LRT) and cumulative sums of squares (CUSUM), and two online methods using support vector machines (SVMs) and Gaussian processes [tentatively].
 The expectation here is that offline methods will prove more powerful and accurate but will take much longer to process the data than online methods as the tradeoff.
 To obtain a more thorough picture of these techniques, we will further compare them across simulated data and three real data sets of increasing dimensionality: a bivariate sensor set from structural stress testing, a historical set of cryptocurrency prices across a small set of currency markets, and a high-dimensional social media sentiment data set.
 From there, we will then explore methods one might use to circumvent these algorithms to compare their weaknesses.
