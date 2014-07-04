@@ -26,7 +26,7 @@ All of the source code for this work can be found on GitHub at:
 
 \begin{itemize}
 \item \textbf{Found an existing Python library for modeling VAR time series data} -- Python's Statsmodels package (\url{statsmodels.sourceforge.net}) provides some nice VAR modeling implementations for maximum likelihood estimates of $\Phi$ matrices. It does not currently support VARIMA models, however, so we are limited in that regard.
-\item \textbf{Implemented a Data Simulation Script} -- Can simulate three-dimensional time series data with an arbitrary $\Phi$ matrix, an arbitrary number of change points, and an arbitrary number of data points.
+\item \textbf{Implemented a Data Simulation Script} -- Can simulate three-dimensional VAR(1) time series data with an arbitrary $\Phi$ matrix, an arbitrary number of change points with randomly generated changes in the innovation covariance matrix, and an arbitrary number of data points.
 \item \textbf{Implemented Two Versions of Galeano and Pe\~{n}a's LRT Statistic} -- The first implemented version of the LRT-based covariance change detection algorithm uses Galeano and Pe\~{n}a's method for finding the maximum likelihood ratio statistic (which corresponds to a change point) in the given time series, recursively splits the series at the change point, and rather than computing $W$, it re-applies Statsmodels' VAR model fitting functionality to estimate a new model on the smaller series. This operation continues until no more change points are detected. The second implementation follows the paper's version more closely by estimating $W$ when a change point occurs. Bother implementations seem to perform consistently, by the paper's version is faster in that it does not require a round of model fitting for every change point.
 \item \textbf{Implemented Two Versions of Galeano and Pe\~{n}a's CUSUM Statistic} These two implementations of CUSUM were developed separately. One makes use of binary segmentation of the time series when a change point is found, and the other implementation follows the procedure provided in the paper (with several additions to obtain a working algorithm). As with the LRT implementations, the version following the paper demonstrate better accuracy in identifying change points in simulated data.
 \item \textbf{Authored a Preliminary Research Abstract} -- This abstract sets forth, at a high level, our plans for the remainder of the project.
@@ -36,7 +36,7 @@ All of the source code for this work can be found on GitHub at:
 
 \begin{itemize}
 \item \textbf{Simulate Data for Analysis} -- We need to simulate more data of varying dimension and underlying process type. 
-\item \textbf{Evaluate Implementations on Other Model Types} -- Since our current implementations of LRT and CUSUM statistics rely on a library that can only perform MLEs for VAR-based series, we need to figure out how well (if at all) this works for VARMA or VARIMA and models of different $(p,q)$ orders.
+\item \textbf{Evaluate Implementations on Other Model Types} -- Since our current implementations of LRT and CUSUM statistics rely on a library that can only perform MLEs for VAR-based series, we need to figure out how well (if at all) this works for VARMA or VARIMA and models of different $(p,d,q)$ orders.
 \item \textbf{Capture Data for Analysis} -- We already have the bridge data, but we need to grab the Bitcoin market data and Twitter data.
 \item \textbf{Begin Implementing Online Algorithms} -- We need to start implementing the SVM and Gaussian process algorithms.
 \end{itemize}
