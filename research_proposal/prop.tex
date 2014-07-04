@@ -29,13 +29,14 @@
 
 \section{Research Abstract}
 
-Change point detection has been an active area of research for several decades, has spanned numerous disciplines, and has been applied to financial analysis, cyber security, and climatology just to name a few.
-With the advent of the Internet, virtual astronomical observatories, the Large Hadron Collider, genome sequencing, and other ``big data'' sources, however, we have already past the point where we can afford to store an entire data set and retrospectively analyze it completely in a reasonable period of time, and existing univariate approaches break down.
+Change point detection has been an active area of research for several decades, has spanned numerous disciplines, and has seen use in financial analysis, cyber security, climatology, and many other areas.
+With the advent of the Internet, virtual astronomical observatories, the Large Hadron Collider, genome sequencing, and other ``big data'' sources, however, we have already past the point where we can afford to store and analyze entire data sets in a reasonable amount of time.
+Furthermore, existing univariate approaches can no longer adequately capture the complex interactions present.
 Instead, online and streaming algorithms that process multivariate data are increasingly popular and are becoming more powerful.
 This departure represents a significant shift in change-point detection techniques, but relatively little research seems to exist regarding comparisons between older offline and newer online algorithms.
 This project seeks to bridge this gap between the old and new by comparing a set of change-point detection methods, containing both retrospective (i.e., offline) and streaming (online) approaches, across several data sets of increasing dimension and exploring the strengths and weaknesses among them.
 
-More specifically, we plan to compare four existing change-point detection algorithms that focuses on changes in covariance: two offline approaches based on the likelihood ratio test (LRT) and cumulative sums of squares (CUSUM), and two online methods using support vector machines (SVMs) and Gaussian processes [tentatively].
+More specifically, we plan to compare four existing change-point detection algorithms that focus on changes in covariance: two offline approaches based on the likelihood ratio test (LRT) and cumulative sums of squares (CUSUM), and two online methods using support vector machines (SVMs) and Gaussian processes [tentatively].
 The expectation here is that offline methods will prove more powerful and accurate but will take much longer to process the data than online methods as the tradeoff.
 To obtain a more thorough picture of these techniques, we will further compare them across simulated data and three real data sets of increasing dimensionality: a bivariate sensor set from structural stress testing, a historical set of cryptocurrency prices across a small set of currency markets, and a high-dimensional social media sentiment data set.
 From there, we will then explore methods one might use to circumvent these algorithms to compare their weaknesses.
