@@ -66,11 +66,9 @@ def recursiveChangePointDetector(residuals, p, q, k, index, results):
     maxIndex = np.argmax(likelihoodRatioStats[d:n-d]) + d
     maxStat = likelihoodRatioStats[maxIndex]
 
-    testStat = np.max(likelihoodRatioStats[d:n-d])
-
-    print "Found Max:", testStat, "Max:", maxStat, "occurs at:", maxIndex
+    print "Found Max:", maxStat, "occurs at:", index[maxIndex]
     
-    criticalValue = critValueSim.getCriticalValue((k*(k+1)/2))
+    criticalValue = critValueSim.getCriticalValue((k*(k+1)/2), alpha=0.0001)
     if ( maxStat > criticalValue ):
         print "Found a potential change point at:", index[maxIndex]
         
@@ -127,8 +125,16 @@ if ( len(sys.argv) < 2 ):
 	exit(1)
 
 dataPath = sys.argv[1]
-df = pandas.read_csv(dataPath, header=None)
+df = pandas.read_csv(dataPath)
 print "Finished reading data."
+
+if ( type(df[df.columns[0]][0]) == str ):
+    print "Reindexing using column:", df.columns[0]
+    df['index'] = pandas.DatetimeIndex(df[df.columns[0]])
+    df = df.set_index('index')
+    df = df[df.columns[1:]]
+    df = df.sort_index()
 
 results = changePointDetectorInit(df, 1, 0)
 print sorted(results.keys())
+print "Number of Change Points:", len(results.keys())
