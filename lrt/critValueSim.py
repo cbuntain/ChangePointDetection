@@ -1,18 +1,20 @@
 #!/usr/bin/python
 
 import numpy as np
+import multiprocessing as mp
 
 criticalValueMap = {}
 
+def simHelper(degreeFreedom):
+
+	return max([np.random.chisquare(degreeFreedom) for x in range(10000)])
+
 def simulateCriticalValue(degreeFreedom, runs):
 
-	# Do stuff
-	maxList = []
-	for i in range(runs):
-		chiSqData = [np.random.chisquare(degreeFreedom) for x in range(10000)]
-		maxList.append(max(chiSqData))
+	pool = mp.Pool(processes=4)
+	result = pool.map_async(simHelper, [degreeFreedom]*runs)
 
-	return sorted(maxList)
+	return sorted(result.get())
 
 def getCriticalValue(degreeFreedom, alpha=0.05, runs=10000):
 
@@ -27,7 +29,7 @@ def getCriticalValue(degreeFreedom, alpha=0.05, runs=10000):
 	else:
 		(lambdaMaxDistribution, lambdaMaxDistributionLen) = criticalValueMap[degreeFreedom]
 
-	critIndex = int(lambdaMaxDistributionLen * alpha)
+	critIndex = int(lambdaMaxDistributionLen * (1.0 - alpha))
 	
 	return lambdaMaxDistribution[critIndex]
 
@@ -53,5 +55,10 @@ if __name__ == "__main__":
 	critVal = getCriticalValue(degreeFreedom, alpha, runs)
 
 	print("Critical Value at alpha=%f with DF=%f: %f" % (alpha, degreeFreedom, critVal))
+
+	import matplotlib.pylab as plt
+	(lambdaDist, distLen) = criticalValueMap[degreeFreedom]
+	plt.hist(lambdaDist, bins=100)
+	plt.show()
 
 

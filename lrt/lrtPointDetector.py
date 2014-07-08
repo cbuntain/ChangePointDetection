@@ -23,13 +23,16 @@ def calculateS(residuals, offset, length):
     
     return sMatrix
 
-def recursiveChangePointDetector(dataframe, p, q, results):
+def recursiveChangePointDetector(dataframe, p, q, results, alpha=0.001):
     
     k = dataframe.shape[1]
-    d = k * (p + q + 1) + k + 1
     
     modeler = tsa.vector_ar.var_model.VAR(dataframe.as_matrix())
     model = modeler.fit()
+
+    p = int(model.k_ar)
+    q = 0
+    d = k * (p + q + 1) + k + 1
     
     n = model.resid.shape[0]
 
@@ -70,7 +73,7 @@ def recursiveChangePointDetector(dataframe, p, q, results):
 
     print "Found Max:", testStat, "Max:", maxStat, "occurs at:", maxIndex
     
-    criticalValue = critValueSim.getCriticalValue((k*(k+1)/2))
+    criticalValue = critValueSim.getCriticalValue((k*(k+1)/2), alpha)
     if ( maxStat > criticalValue ):
         print "Found a potential change point at:", dataframe.index[maxIndex]
         
@@ -80,22 +83,34 @@ def recursiveChangePointDetector(dataframe, p, q, results):
         rightDataFrame = dataframe[maxIndex:]
         
         if ( leftDataFrame.shape[0] >= 2*d + 1 ):
-            recursiveChangePointDetector(leftDataFrame, p, q, results)
+            recursiveChangePointDetector(leftDataFrame, p, q, results, alpha)
             
         if ( rightDataFrame.shape[0] >= 2*d + 1 ):
-            recursiveChangePointDetector(rightDataFrame, p, q, results)
+            recursiveChangePointDetector(rightDataFrame, p, q, results, alpha)
         
     return results
 
 import sys
 
 if ( len(sys.argv) < 2 ):
-	print "Usage: %s <csv_data>" % sys.argv[0]
+	print "Usage: %s <csv_data> [alpha]" % sys.argv[0]
 	exit(1)
 
+alpha = 0.001
+if ( len(sys.argv) > 2 ):
+    alpha = float(sys.argv[2])
+
 dataPath = sys.argv[1]
-df = pandas.read_csv(dataPath, header=None)
+df = pandas.read_csv(dataPath)
 print "Finished reading data."
 
-results = recursiveChangePointDetector(df, 1, 0, {})
+if ( type(df[df.columns[0]][0]) == str ):
+    print "Reindexing using column:", df.columns[0]
+    df['index'] = pandas.DatetimeIndex(df[df.columns[0]])
+    df = df.set_index('index')
+    df = df[df.columns[1:]]
+    df = df.sort_index()
+
+results = recursiveChangePointDetector(df, 1, 0, {}, alpha)
 print sorted(results.keys())
+print "Number of Change Points:", len(results.keys())

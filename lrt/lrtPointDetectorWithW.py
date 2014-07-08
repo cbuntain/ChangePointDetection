@@ -23,7 +23,7 @@ def calculateS(residuals, offset, length):
     
     return sMatrix
 
-def recursiveChangePointDetector(residuals, p, q, k, index, results):
+def recursiveChangePointDetector(residuals, p, q, k, index, results, alpha=0.001):
 
     d = k * (p + q + 1) + k + 1
     
@@ -68,7 +68,7 @@ def recursiveChangePointDetector(residuals, p, q, k, index, results):
 
     print "Found Max:", maxStat, "occurs at:", index[maxIndex]
     
-    criticalValue = critValueSim.getCriticalValue((k*(k+1)/2), alpha=0.0001)
+    criticalValue = critValueSim.getCriticalValue((k*(k+1)/2), alpha)
     if ( maxStat > criticalValue ):
         print "Found a potential change point at:", index[maxIndex]
         
@@ -102,39 +102,50 @@ def recursiveChangePointDetector(residuals, p, q, k, index, results):
         results[index[maxIndex]] = wMatrix
 
         if ( len(leftResiduals) >= 2*d + 1 ):
-            recursiveChangePointDetector(leftResiduals, p, q, k, leftIndex, results)
+            recursiveChangePointDetector(leftResiduals, p, q, k, leftIndex, results, alpha)
             
         if ( len(rightResiduals) >= 2*d + 1 ):
-            recursiveChangePointDetector(rightResiduals, p, q, k, rightIndex, results)
+            recursiveChangePointDetector(rightResiduals, p, q, k, rightIndex, results, alpha)
         
     return results
 
-def changePointDetectorInit(dataframe, p, q):
+def changePointDetectorInit(dataframe, alpha=0.001):
 
     k = dataframe.shape[1]
+    p = 1
+    q = 0
+    print "Dimension:", k
 
     modeler = tsa.vector_ar.var_model.VAR(dataframe.as_matrix())
     model = modeler.fit()
 
-    return recursiveChangePointDetector(model.resid, p, q, k, dataframe.index, {})
+    p = int(model.k_ar)
+    print "P:", p
 
-import sys
+    return recursiveChangePointDetector(model.resid, p, q, k, dataframe.index, {}, alpha)
 
-if ( len(sys.argv) < 2 ):
-	print "Usage: %s <csv_data>" % sys.argv[0]
-	exit(1)
+if __name__ == '__main__':
+    import sys
 
-dataPath = sys.argv[1]
-df = pandas.read_csv(dataPath)
-print "Finished reading data."
+    if ( len(sys.argv) < 2 ):
+    	print "Usage: %s <csv_data>" % sys.argv[0]
+    	exit(1)
 
-if ( type(df[df.columns[0]][0]) == str ):
-    print "Reindexing using column:", df.columns[0]
-    df['index'] = pandas.DatetimeIndex(df[df.columns[0]])
-    df = df.set_index('index')
-    df = df[df.columns[1:]]
-    df = df.sort_index()
+    alpha = 0.001
+    if ( len(sys.argv) > 2 ):
+        alpha = float(sys.argv[2])
 
-results = changePointDetectorInit(df, 1, 0)
-print sorted(results.keys())
-print "Number of Change Points:", len(results.keys())
+    dataPath = sys.argv[1]
+    df = pandas.read_csv(dataPath)
+    print "Finished reading data."
+
+    if ( type(df[df.columns[0]][0]) == str ):
+        print "Reindexing using column:", df.columns[0]
+        df['index'] = pandas.DatetimeIndex(df[df.columns[0]])
+        df = df.set_index('index')
+        df = df[df.columns[1:]]
+        df = df.sort_index()
+
+    results = changePointDetectorInit(df, alpha)
+    print sorted(results.keys())
+    print "Number of Change Points:", len(results.keys())
