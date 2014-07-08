@@ -3,6 +3,7 @@
 import numpy as np
 import statsmodels.tsa.api as tsa
 import matplotlib.pylab as plt
+import pandas
 import sys
 
 
@@ -63,24 +64,20 @@ def critical_value(alpha):
 def cusum_algorithm(data, critical_value):
 
     num_dimensions = len(data[0])
-    lag_order = 1
-    d = int(num_dimensions * (lag_order + 0 + 1)
-            + (num_dimensions * (num_dimensions + 1)) / 2 + 1)
     total_time = len(data)
+
 
 
     ################
     #### STEP 1 ####
     ################
 
-    # Estimate a VAR model and compute the residuals.
+    # Estimate a VAR(p) model and compute the residuals.
     model = tsa.VAR(data)
-    results = model.fit(lag_order)
-    Phi = np.matrix(results.params[1: ])
-    intercept = np.matrix(results.params[0]).T
-    residuals = [ data[t+1] - (intercept + Phi * data[t])
-                  for t in range(total_time - 1) ]
-    residuals.insert(0, intercept)
+    results = model.fit()
+    residuals = [ np.matrix(e).T for e in list(results.resid) ]
+    d = int(num_dimensions * (results.k_ar + 0 + 1)
+            + (num_dimensions * (num_dimensions + 1)) / 2 + 1)
 
     possible_changepoints = [0, total_time-1]
 
@@ -196,8 +193,18 @@ if __name__ == '__main__':
     # Import the data.
     input_filename = sys.argv[1]
     with open(input_filename) as fp:
-        data = [ np.matrix([ float(num) for num in line.split(',') ]).T
-                 for line in fp ]
+        if 'simulation' in input_filename:
+            data = [ np.matrix([ float(num) for num in line.split(',') ]).T
+                     for line in fp ]
+        elif 'full.csv' in input_filename:
+            df = pandas.read_csv(input_filename)
+            if ( type(df[df.columns[0]][0]) == str ):
+                df['index'] = pandas.DatetimeIndex(df[df.columns[0]])
+                df = df.set_index('index')
+                df = df[df.columns[1:]]
+                df = df.sort_index()
+            data = df.as_matrix()
+
 
     #critical_value = critical_value(0.000001)
     #print(critical_value)
