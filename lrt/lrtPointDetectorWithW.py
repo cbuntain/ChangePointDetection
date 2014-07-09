@@ -2,12 +2,15 @@
 
 import math
 import pandas
+import logging
 import numpy as np
 import statsmodels.api as sm
 import statsmodels.tsa as tsa
 import pylab as pl
 
 import critValueSim
+
+logger = logging.getLogger('driver')
 
 def calculateS(residuals, offset, length):
     
@@ -38,7 +41,7 @@ def recursiveChangePointDetector(residuals, p, q, k, index, results, alpha=0.001
     
     likelihoodRatioStats = np.zeros(n)
     sF = calculateS(residuals, 0, n)
-    sFullDet = np.linalg.det(sF)
+    sFullDet = np.abs(np.linalg.det(sF))
 
     lastS1 = np.zeros((k,k))
     lastS2 = float(n) * sF
@@ -66,11 +69,11 @@ def recursiveChangePointDetector(residuals, p, q, k, index, results, alpha=0.001
     maxIndex = np.argmax(likelihoodRatioStats[d:n-d]) + d
     maxStat = likelihoodRatioStats[maxIndex]
 
-    print "Found Max:", maxStat, "occurs at:", index[maxIndex]
+    logger.debug("Found max %f occurs at: %d", maxStat, index[maxIndex])
     
     criticalValue = critValueSim.getCriticalValue((k*(k+1)/2), alpha)
     if ( maxStat > criticalValue ):
-        print "Found a potential change point at:", index[maxIndex]
+        logger.debug("Found a potential change point at: %d", index[maxIndex])
         
         leftIndex = index[:maxIndex]
         rightIndex = index[maxIndex:]
@@ -114,13 +117,12 @@ def changePointDetectorInit(dataframe, alpha=0.001):
     k = dataframe.shape[1]
     p = 1
     q = 0
-    print "Dimension:", k
 
     modeler = tsa.vector_ar.var_model.VAR(dataframe.as_matrix())
     model = modeler.fit()
 
     p = int(model.k_ar)
-    print "P:", p
+    logger.debug("P: %s", p.__str__())
 
     return recursiveChangePointDetector(model.resid, p, q, k, dataframe.index, {}, alpha)
 
