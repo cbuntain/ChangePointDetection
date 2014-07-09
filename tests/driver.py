@@ -59,7 +59,7 @@ logger.addHandler(fh)
 # Tunable parameters for testing
 n = 10000
 runs = 100
-kRange = (1,6)
+kRange = (1,5)
 cpRange = (0,10)
 
 logger.info("n: %d", n)
@@ -157,7 +157,6 @@ for i in range(runs):
 
 	df = pd.DataFrame(data)
 
-
 	cusumThread = pool.apply_async(cusumDetector, (df, ))
 	lrtThread = pool.apply_async(lrtDetector, (df, ))
 
@@ -236,7 +235,7 @@ for (accArr, alg) in [(foundCpLrt, "LRT"), (foundCpCusum, "CUSUM")]:
 	recall = float(truePos) / float(truePos + falseNeg)
 	f1 = 2.0 * precision * recall / (precision + recall)
 
-	logger.info("%s - F1: %d", alg, f1)
+	logger.info("%s - F1: %f", alg, f1)
 
 	runResults[alg] = {"tp": truePos, "fp": falsePos, "acc": accuracy, "precision": precision, "recall": recall, "f1": f1}
 
