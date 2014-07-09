@@ -5,6 +5,7 @@ import sys
 import time
 import json
 import logging
+import threading
 import scipy.sparse
 import numpy as np
 import pandas as pd
@@ -153,13 +154,19 @@ for i in range(runs):
 
 	df = pd.DataFrame(data)
 
-	for (detector, accArr, index) in [(cusumDetector, foundCpCusum, "CUSUM"), (lrtDetector, foundCpLrt, "LRT")]:
+	cusumThread = threading.Thread(target=cusumDetector, args=(df,))
+	cusumThread.start()
+	lrtThread = threading.Thread(target=lrtDetector, args=(df,))
+	lrtThread.start()
+
+	for (detectThread, accArr, index) in [(cusumThread, foundCpCusum, "CUSUM"), (lrtThread, foundCpLrt, "LRT")]:
 		
 		logger.info("Algorithm: %s", index)
 
 		# Perform detection and catch errors
 		try:
-			detectedPoints = detector(df)
+			# detectedPoints = detector(df)
+			detectThread.join()
 		except Exception as e:
 			errorStr = "%s -- Run %d: %s Error: %s" % (time.strftime("%d %b %Y %H:%M:%S"), i, index, e.__str__())
 			logger.error(errorStr)
