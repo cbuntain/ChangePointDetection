@@ -5,12 +5,12 @@ import sys
 import time
 import json
 import logging
-import threading
 import scipy.sparse
+import scipy.linalg
 import numpy as np
 import pandas as pd
 
-import scipy.linalg
+from multiprocessing.pool import ThreadPool
 
 from simulate_data import simulateVAR
 
@@ -57,7 +57,7 @@ logger.addHandler(fh)
 
 
 # Tunable parameters for testing
-n = 100000
+n = 10000
 runs = 100
 kRange = (1,6)
 cpRange = (0,10)
@@ -79,6 +79,9 @@ foundCpCusum = []
 
 # Array for results
 results = []
+
+# Thread pool for running algorithms
+pool = ThreadPool(processes=2)
 
 for i in range(runs):
 
@@ -154,10 +157,9 @@ for i in range(runs):
 
 	df = pd.DataFrame(data)
 
-	cusumThread = threading.Thread(target=cusumDetector, args=(df,))
-	cusumThread.start()
-	lrtThread = threading.Thread(target=lrtDetector, args=(df,))
-	lrtThread.start()
+
+	cusumThread = pool.apply_async(cusumDetector, (df, ))
+	lrtThread = pool.apply_async(lrtDetector, (df, ))
 
 	for (detectThread, accArr, index) in [(cusumThread, foundCpCusum, "CUSUM"), (lrtThread, foundCpLrt, "LRT")]:
 		
@@ -166,7 +168,7 @@ for i in range(runs):
 		# Perform detection and catch errors
 		try:
 			# detectedPoints = detector(df)
-			detectThread.join()
+			detectedPoints = detectThread.get()
 		except Exception as e:
 			errorStr = "%s -- Run %d: %s Error: %s" % (time.strftime("%d %b %Y %H:%M:%S"), i, index, e.__str__())
 			logger.error(errorStr)
