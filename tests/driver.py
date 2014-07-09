@@ -57,7 +57,7 @@ logger.addHandler(fh)
 
 # Tunable parameters for testing
 n = 100000
-runs = 10
+runs = 100
 kRange = (1,6)
 cpRange = (0,10)
 
@@ -155,6 +155,8 @@ for i in range(runs):
 
 	for (detector, accArr, index) in [(cusumDetector, foundCpCusum, "CUSUM"), (lrtDetector, foundCpLrt, "LRT")]:
 		
+		logger.info("Algorithm: %s", index)
+
 		# Perform detection and catch errors
 		try:
 			detectedPoints = detector(df)
@@ -173,7 +175,6 @@ for i in range(runs):
 
 		actualChangePtsCopy = changePts[:]
 
-		logger.info("Algorithm: %s", index)
 		foundChangePoints = sorted(detectedPoints.keys())
 		logger.info("Change Points: %s", foundChangePoints.__str__())
 		for cp in foundChangePoints:
