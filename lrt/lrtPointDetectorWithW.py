@@ -28,7 +28,7 @@ def calculateS(residuals, offset, length):
 
 def recursiveChangePointDetector(residuals, p, q, k, index, results, alpha=0.001):
 
-    d = k * (p + q + 1) + k + 1
+    d = k * (p + q + 1) + (k*(k+1)/2) + 1
     
     n = residuals.shape[0]
 
