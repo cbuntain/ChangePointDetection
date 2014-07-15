@@ -70,6 +70,9 @@ def recursiveChangePointDetector(residuals, p, q, k, index, results, alpha=0.001
     maxStat = likelihoodRatioStats[maxIndex]
 
     logger.debug("Found max %f occurs at: %d", maxStat, index[maxIndex])
+
+    # Store the LRT statistics
+    results["statistics"].append((index[d], index[n-d], likelihoodRatioStats))
     
     criticalValue = critValueSim.getCriticalValue((k*(k+1)/2), alpha)
     if ( maxStat > criticalValue ):
@@ -102,7 +105,7 @@ def recursiveChangePointDetector(residuals, p, q, k, index, results, alpha=0.001
             rightResiduals.append(newResidual)
         rightResiduals = np.array(rightResiduals)
 
-        results[index[maxIndex]] = wMatrix
+        results["points"][index[maxIndex]] = wMatrix
 
         if ( len(leftResiduals) >= 2*d + 1 ):
             recursiveChangePointDetector(leftResiduals, p, q, k, leftIndex, results, alpha)
@@ -124,7 +127,11 @@ def changePointDetectorInit(dataframe, alpha=0.001):
     p = int(model.k_ar)
     logger.debug("P: %s", p.__str__())
 
-    return recursiveChangePointDetector(model.resid, p, q, k, dataframe.index, {}, alpha)
+    criticalValue = critValueSim.getCriticalValue((k*(k+1)/2), alpha)
+
+    results = {"statistics":[], "points":{}, "criticalValue":criticalValue}
+
+    return recursiveChangePointDetector(model.resid, p, q, k, dataframe.index, results, alpha)
 
 if __name__ == '__main__':
     import sys
@@ -133,7 +140,7 @@ if __name__ == '__main__':
     	print "Usage: %s <csv_data>" % sys.argv[0]
     	exit(1)
 
-    alpha = 0.001
+    alpha = 0.05
     if ( len(sys.argv) > 2 ):
         alpha = float(sys.argv[2])
 
@@ -149,5 +156,11 @@ if __name__ == '__main__':
         df = df.sort_index()
 
     results = changePointDetectorInit(df, alpha)
-    print sorted(results.keys())
-    print "Number of Change Points:", len(results.keys())
+    print sorted(results["points"].keys())
+    print "Number of Change Points:", len(results["points"].keys())
+
+    import pylab as pl
+    pl.figure(figsize=(8, 6), dpi=80)
+    pl.plot(results["statistics"][0][2], color="blue")
+    pl.plot([results["criticalValue"]] * len(results["statistics"][0][2]), color="red")
+    pl.show()

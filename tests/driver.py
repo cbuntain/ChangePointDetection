@@ -16,9 +16,11 @@ from simulate_data import simulateVAR
 
 sys.path.append(os.path.join("..", "lrt"))
 sys.path.append(os.path.join("..", "cusum"))
+sys.path.append(os.path.join("..", "kcd"))
 
 from lrtPointDetectorWithW import changePointDetectorInit
 from cusum_change_detector import cusum_algorithm
+from kcd import kernelChangeDetection
 
 def cusumWrapper(data):
 
@@ -30,6 +32,7 @@ def cusumWrapper(data):
 	return mappedPts
 
 lrtDetector = lambda x: changePointDetectorInit(x, alpha=0.05)
+kcdDetector = lambda x: kernelChangeDetection(x, eta=0.4)
 cusumDetector = cusumWrapper
 
 # Set up logging
@@ -76,12 +79,13 @@ errFile = open(errFileName, "w")
 actualCp = []
 foundCpLrt = []
 foundCpCusum = []
+foundCpKcd = []
 
 # Array for results
 results = []
 
 # Thread pool for running algorithms
-pool = ThreadPool(processes=2)
+pool = ThreadPool()
 
 for i in range(runs):
 
@@ -159,8 +163,13 @@ for i in range(runs):
 
 	cusumThread = pool.apply_async(cusumDetector, (df, ))
 	lrtThread = pool.apply_async(lrtDetector, (df, ))
+	kcdThread = pool.apply_async(kcdDetector, (df, ))
 
-	for (detectThread, accArr, index) in [(cusumThread, foundCpCusum, "CUSUM"), (lrtThread, foundCpLrt, "LRT")]:
+	algoList = [(cusumThread, foundCpCusum, "CUSUM"), \
+				(lrtThread, foundCpLrt, "LRT"),\
+				(kcdThread, foundCpKcd, "KCD")]
+
+	for (detectThread, accArr, index) in algoList:
 		
 		logger.info("Algorithm: %s", index)
 
@@ -221,7 +230,7 @@ logger.info("Actual Count: %d", actuals)
 
 runResults = {"actuals": actuals}
 
-for (accArr, alg) in [(foundCpLrt, "LRT"), (foundCpCusum, "CUSUM")]:
+for (accArr, alg) in [(foundCpLrt, "LRT"), (foundCpCusum, "CUSUM"), (foundCpKcd, "KCD")]:
 	truePos = np.sum([x[0] for x in accArr])
 	falsePos = np.sum([x[1] for x in accArr])
 	falseNeg = actuals - truePos
