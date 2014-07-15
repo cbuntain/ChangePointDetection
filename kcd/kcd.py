@@ -5,19 +5,9 @@ import logging
 import pandas as pd
 import numpy as np
 from sklearn import svm
+import sklearn.metrics
 
-def rbfKernelFunc(x, y, gamma):
-    z = np.zeros((x.shape[0], y.shape[0]))
-
-    for i in range(x.shape[0]):
-        xi = x[i]
-        for j in range(y.shape[0]):
-            yj = y[j]
-
-            diff = (xi - yj)
-            z[i][j] = np.exp(-1.0 * gamma * np.abs(np.dot(diff, diff.T)))
-
-    return z
+from multiprocessing.pool import ThreadPool
 
 def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625):
 
@@ -66,9 +56,9 @@ def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625):
 
         m = leftData.shape[0]
 
-        k11 = rbfKernelFunc(leftData.as_matrix(), leftData.as_matrix(), gamma)
-        k22 = rbfKernelFunc(rightData.as_matrix(), rightData.as_matrix(), gamma)
-        k12 = rbfKernelFunc(leftData.as_matrix(), rightData.as_matrix(), gamma)
+        k11 = sklearn.metrics.pairwise.rbf_kernel(leftData.as_matrix(), leftData.as_matrix(), gamma=gamma)
+        k22 = sklearn.metrics.pairwise.rbf_kernel(rightData.as_matrix(), rightData.as_matrix(), gamma=gamma)
+        k12 = sklearn.metrics.pairwise.rbf_kernel(leftData.as_matrix(), rightData.as_matrix(), gamma=gamma)
 
         top = np.dot(np.dot(alphaLeft.T, k12), alphaRight)
         botLeft = np.sqrt(np.dot(np.dot(alphaLeft.T, k11), alphaLeft))
@@ -90,6 +80,7 @@ def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625):
 if __name__ == '__main__':
 
     import sys
+    import json
 
     if (len(sys.argv) < 2):
         print "Usage: %s <csv_file>" % sys.argv[0]
@@ -109,11 +100,21 @@ if __name__ == '__main__':
 
     indexlessDf = df[df.columns[1:]]
 
-    (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=100, eta=0.35, nu=0.5)
+    # import cProfile
+    # profiledFunc = lambda: kernelChangeDetection(indexlessDf, d=100, eta=0.35, nu=0.5)
+    # cProfile.run('profiledFunc()', 'kcd.profile')
+    # exit(1)
+
+    (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=100, eta=0.35, nu=0.25)
 
     print "Found Change Points:", changePoints
     for t in df.index[changePoints]:
         print t
+
+    outputFilename = dataFile + '.json'
+    outputFile = open(outputFilename, 'w')
+    outputFile.write(json.dumps({"data":kcdStat, "changepoints":changePoints}))
+    outputFile.close()
 
     import pylab as pl
     pl.figure(figsize=(8, 6), dpi=80)
