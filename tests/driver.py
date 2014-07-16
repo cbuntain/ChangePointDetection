@@ -31,8 +31,22 @@ def cusumWrapper(data):
 
 	return mappedPts
 
-lrtDetector = lambda x: changePointDetectorInit(x, alpha=0.05)
-kcdDetector = lambda x: kernelChangeDetection(x, eta=0.4)
+def lrtWrapper(data):
+
+	resultMap = changePointDetectorInit(data, alpha=0.05)
+
+	return resultMap["points"]
+
+def kcdWrapper(data):
+
+	(changePoints, stats) = kernelChangeDetection(data, eta=0.4, d=100, gamma = 0.5, nu=0.5)
+
+	mappedPts = dict(zip(changePoints, tuple([None]*len(changePoints))))
+
+	return mappedPts
+
+lrtDetector = lrtWrapper
+kcdDetector = kcdWrapper
 cusumDetector = cusumWrapper
 
 # Set up logging
@@ -60,9 +74,9 @@ logger.addHandler(fh)
 
 
 # Tunable parameters for testing
-n = 10000
+n = 1000
 runs = 100
-kRange = (1,5)
+kRange = (2,15)
 cpRange = (0,10)
 
 logger.info("n: %d", n)
@@ -91,7 +105,7 @@ for i in range(runs):
 
 	paramMap = {}
 
-	k = 2**np.random.random_integers(kRange[0], kRange[1])
+	k = np.random.random_integers(kRange[0], kRange[1])
 	numChanges = np.random.random_integers(cpRange[0], cpRange[1])
 
 	logger.info("Run: %d", i)
@@ -136,7 +150,7 @@ for i in range(runs):
 		
 		mean = np.random.random_integers(1000, size=(k,))
 
-		(data, covariances, wMatrices, changePts) = simulateVAR(n, numChanges, Phi, mean)
+		(data, covariances, wMatrices, changePts) = simulateVAR(n, numChanges, Phi, mean, covChange=lambda s, i: 3**(i+1) *s)
 
 		if ( np.sum(np.isnan(data)) == 0 and np.sum(np.isinf(data)) == 0 ):
 			break
@@ -239,6 +253,9 @@ for (accArr, alg) in [(foundCpLrt, "LRT"), (foundCpCusum, "CUSUM"), (foundCpKcd,
 	logger.info("%s - Found Count: %d", alg, truePos)
 	logger.info("%s - False Pos Count: %d", alg, falsePos)
 	logger.info("%s - Accuracy: %f", alg, accuracy)
+
+	if ( truePos + falsePos == 0 ):
+		continue
 
 	precision = float(truePos) / float(truePos + falsePos)
 	recall = float(truePos) / float(truePos + falseNeg)
