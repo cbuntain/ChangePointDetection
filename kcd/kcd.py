@@ -9,6 +9,21 @@ import sklearn.metrics
 
 from multiprocessing.pool import ThreadPool
 
+def convertDataToCov(data, windowSize=75):
+
+    covariances = []
+
+    for i in range(windowSize, data.shape[0]):
+
+        windowData = data[i-windowSize:i]
+        zeroedData = windowData - windowData.mean()
+
+        covMatrix = np.dot(zeroedData.T, zeroedData) / float(windowSize - 1)
+
+        covariances.append(covMatrix.ravel())
+
+    return pd.DataFrame(covariances)
+
 def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625):
 
     kcdStat = []
@@ -16,14 +31,14 @@ def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625):
 
     for targetT in range(d,df.shape[0] - d):
         
-        if ( targetT % 100 == 0 ):
-            print targetT, "/", df.shape[0] - d
-        
         start = targetT - d
         end = targetT + d
         
         leftData = df[start:targetT]
         rightData = df[targetT:end]
+
+        # leftData = convertDataToCov(leftData, windowSize=d-20)
+        # rightData = convertDataToCov(rightData, windowSize=d-20)
         
         # Try and model the time series as VAR1
         # TODO: Remove if no benefit
@@ -65,8 +80,8 @@ def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625):
         botRight = np.sqrt(np.dot(np.dot(alphaRight.T, k22), alphaRight))
 
         ct1ct2 = np.arccos(top / (botLeft * botRight))
-        ct1pt1 = np.arccos(leftSvm.intercept_/botLeft)
-        ct2pt2 = np.arccos(rightSvm.intercept_/botRight)
+        ct1pt1 = np.arccos(leftSvm.intercept_/(botLeft))
+        ct2pt2 = np.arccos(rightSvm.intercept_/(botRight))
 
         dH = (ct1ct2 / (ct1pt1 + ct2pt2))[0][0]
         
@@ -105,18 +120,27 @@ if __name__ == '__main__':
     # cProfile.run('profiledFunc()', 'kcd.profile')
     # exit(1)
 
-    (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=100, eta=0.35, nu=0.25)
+    stats = []
 
-    print "Found Change Points:", changePoints
-    for t in df.index[changePoints]:
-        print t
+    for param in [None]:
 
-    outputFilename = dataFile + '.json'
-    outputFile = open(outputFilename, 'w')
-    outputFile.write(json.dumps({"data":kcdStat, "changepoints":changePoints}))
-    outputFile.close()
+        print param
+        (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=50, eta=0.5, nu=0.125, gamma=0.25)
+
+        stats.append((kcdStat, param))
+
+        print "Found Change Points:", changePoints
+        for t in df.index[changePoints]:
+            print t
+
+        outputFilename = dataFile + '.json'
+        outputFile = open(outputFilename, 'w')
+        outputFile.write(json.dumps({"data":kcdStat, "changepoints":changePoints}))
+        outputFile.close()
 
     import pylab as pl
     pl.figure(figsize=(8, 6), dpi=80)
-    pl.plot(kcdStat)
+    for v in stats:
+        pl.plot(v[0], label=str(v[1]))
+    pl.legend()
     pl.show()
