@@ -1,6 +1,6 @@
 import numpy as np
 
-def simulateVAR(n, numChanges, phi, mean):
+def simulateVAR(n, numChanges, phi, mean, covChange=lambda sigma, i: sigma, meanShift=lambda mu, i: 0):
 
     k = mean.shape[0]
 
@@ -30,7 +30,8 @@ def simulateVAR(n, numChanges, phi, mean):
             try:
                 M = np.random.rand(k, k)
                 M = M + M.T + k * np.identity(k)
-                M = 3**(i+1) * M # Increase the covariance after each changepoint.
+                # M = 3**(i+1) * M # Increase the covariance after each changepoint.
+                M = covChange(M, i)
                 np.linalg.cholesky(M) # Check that M is symmetric positive semidefinite.
 
                 # If we get this far, we have a good M matrix
@@ -54,7 +55,7 @@ def simulateVAR(n, numChanges, phi, mean):
             start = 1
 
         for t in range(start, end):
-            datapoint = np.dot(phi, data[t-1]) + innovations[t]
+            datapoint = np.dot(phi, (data[t-1] + meanShift(mean, i))) + innovations[t]
             data[t] = datapoint
         covariances[i] = innovation_covariance
 
