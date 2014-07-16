@@ -37,8 +37,8 @@ def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625):
         leftData = df[start:targetT]
         rightData = df[targetT:end]
 
-        # leftData = convertDataToCov(leftData, windowSize=d-20)
-        # rightData = convertDataToCov(rightData, windowSize=d-20)
+        # leftData = convertDataToCov(leftData, windowSize=d/2)
+        # rightData = convertDataToCov(rightData, windowSize=d/2)
         
         # Try and model the time series as VAR1
         # TODO: Remove if no benefit
@@ -80,8 +80,8 @@ def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625):
         botRight = np.sqrt(np.dot(np.dot(alphaRight.T, k22), alphaRight))
 
         ct1ct2 = np.arccos(top / (botLeft * botRight))
-        ct1pt1 = np.arccos(leftSvm.intercept_/(botLeft))
-        ct2pt2 = np.arccos(rightSvm.intercept_/(botRight))
+        ct1pt1 = np.arccos(np.abs(leftSvm.intercept_)/(botLeft))
+        ct2pt2 = np.arccos(np.abs(rightSvm.intercept_)/(botRight))
 
         dH = (ct1ct2 / (ct1pt1 + ct2pt2))[0][0]
         
@@ -122,10 +122,13 @@ if __name__ == '__main__':
 
     stats = []
 
+    # for param in [0.005, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1]:
+    # for param in [25, 30, 50, 75, 100, 200]:
     for param in [None]:
 
         print param
-        (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=50, eta=0.5, nu=0.125, gamma=0.25)
+        # (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=50, eta=0.5, nu=0.125, gamma=0.25)
+        (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=200, eta=0.5, nu=0.125, gamma=0.25)
 
         stats.append((kcdStat, param))
 
