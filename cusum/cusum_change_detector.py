@@ -23,7 +23,18 @@ def max_Cs(left, right, residuals, num_dimensions):
     
     # Estimate the covariance matrix of the innovations.
     Sigma = sum([ e * e.T for e in resid ]) / (len(resid) - 1)
-    Sigma_inv = Sigma.I
+
+    Sigma_inv = None
+    try:
+        Sigma_inv = Sigma.I
+    except:
+        print "Left:", left
+        print "Right:", right
+        print "Sigma:", Sigma, 
+        print "Len of Residuals:", len(residuals)
+        print "Len of Resid:", len(resid)
+
+        raise
 
     square_residuals = [ float(e.T * Sigma_inv * e) for e in resid ]
 
@@ -86,6 +97,10 @@ def cusum_algorithm(data, critical_value):
     h_last = total_time-1 - d
 
     while True:
+
+        if ( h_first >= h_last ):
+            break
+            
         ################
         #### STEP 2 ####
         ################
