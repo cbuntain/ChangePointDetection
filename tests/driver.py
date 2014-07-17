@@ -22,6 +22,42 @@ from lrtPointDetectorWithW import changePointDetectorInit
 from cusum_change_detector import cusum_algorithm
 from kcd import kernelChangeDetection
 
+def generateCandidateMatrix(k):
+	
+	candidate = None
+
+	while (True):
+		# Generate the data (currently just VAR(1) process).
+		#Phi = np.random.randn(k,k)
+		candidate = scipy.sparse.rand(k, k, density=0.25).todense()
+		candidate = candidate + candidate.T + np.random.random_integers(2,9) * np.eye(k)
+		(w, v) = np.linalg.eig(candidate)
+
+		maxLambda = np.max(w)
+		if ( maxLambda >= 1 ):
+			candidate = candidate / (maxLambda + 1.0)
+			(w, v) = np.linalg.eig(candidate)
+
+		flag = True
+		msg = None
+		if ( np.sum(np.isreal(w) != True) > 0 ):
+			flag = False
+			msg = "Complex eigenvalues"
+		if ( np.min(1.0/np.abs(w)) <= 1 ):
+			flag = False
+			msg = "On/Inside the unit circle"
+		# if ( np.max(1.0/np.abs(w)) > 100 ) :
+		# 	flag = False
+		# 	msg = "Inverted eigenvalue is too large"
+
+		if ( flag == False ):
+			logger.info("Poor eig construct [%s]: [%s] - Regenerating candidate...", msg, w.__str__())
+			continue
+		else:
+			break
+
+	return candidate
+
 def cusumWrapper(data):
 
 	# 1.36 is the critical value for alpha = 0.05
@@ -39,7 +75,14 @@ def lrtWrapper(data):
 
 def kcdWrapper(data):
 
-	(changePoints, stats) = kernelChangeDetection(data, eta=0.4, d=100, gamma = 0.5, nu=0.5)
+	(changePoints, stats) = kernelChangeDetection(data, eta=0.7, d=50, gamma=0.005, nu=0.75)
+
+	# DO NOT UNCOMMENT THIS IF YOU RUN THIS FUNCTION AS A THREAD!1
+	# import pylab as pl
+	# pl.figure(figsize=(8, 6), dpi=80)
+	# pl.plot(stats)
+	# pl.legend()
+	# pl.show()
 
 	mappedPts = dict(zip(changePoints, tuple([None]*len(changePoints))))
 
@@ -77,7 +120,10 @@ logger.addHandler(fh)
 n = 1000
 runs = 100
 kRange = (2,15)
-cpRange = (0,10)
+# kRange = (2,2)
+cpRange = (0,4)
+# cpRange = (1,2)
+varOrder = 1
 
 logger.info("n: %d", n)
 logger.info("Runs: %d", runs)
@@ -112,7 +158,7 @@ for i in range(runs):
 	logger.info("k: %d", k)
 	logger.info("Number of Change Pts: %d", numChanges)
 
-	Phi = None
+	Phis = None
 	mean = None
 	data = None
 	covariances = None
@@ -120,37 +166,48 @@ for i in range(runs):
 	changePts = None
 
 	logger.info("About to generate new Phi and data...")
-	while (True):
-		# Generate the data (currently just VAR(1) process).
-		#Phi = np.random.randn(k,k)
-		Phi = scipy.sparse.rand(k, k, density=0.25).todense()
-		Phi = Phi + Phi.T + np.random.random_integers(2,9) * np.eye(k)
-		(w, v) = np.linalg.eig(Phi)
+	while ( True ):
 
-		maxLambda = np.max(w)
-		if ( maxLambda >= 1 ):
-			Phi = Phi / (maxLambda + 1.0)
-			(w, v) = np.linalg.eig(Phi)
+		candidates = []
+		for p in range(varOrder):
+			candidates.append(generateCandidateMatrix(k))
+		logger.info("Generate %d new candidates...", varOrder)
 
-		flag = True
-		msg = None
-		if ( np.sum(np.isreal(w) != True) > 0 ):
-			flag = False
-			msg = "Complex eigenvalues"
-		if ( np.min(1.0/np.abs(w)) <= 1 ):
-			flag = False
-			msg = "On/Inside the unit circle"
-		# if ( np.max(1.0/np.abs(w)) > 100 ) :
-		# 	flag = False
-		# 	msg = "Inverted eigenvalue is too large"
+		PhiList = []
+		if varOrder == 1:
+			PhiList.append(candidates[0])
+		elif varOrder == 2:
+			PhiList.append(candidates[0] + candidates[1])
+			PhiList.append(-1.0 * np.dot(candidates[0], candidates[1]))
+		elif varOrder == 3:
+			PhiList.append(candidates[0] + candidates[1] + candidates[2])
+			PhiList.append(-1.0 * np.dot(candidates[0], candidates[1]) - \
+				np.dot(candidates[1], candidates[2]) - \
+				np.dot(candidates[0], candidates[2]))
+			PhiList.append(np.dot(np.dot(candidates[0], candidates[1]), candidates[2]))
+		else:
+			print "Can't do beyond order 3, and you requested order:", varOrder
+			exit(1)
 
-		if ( flag == False ):
-			logger.info("Poor eig construct [%s]: [%s] - Regenerating Phi and data...", msg, w.__str__())
-			continue
+		Phis = PhiList
 		
-		mean = np.random.random_integers(1000, size=(k,))
+		mean = np.random.random_integers(100, size=(k,))
 
-		(data, covariances, wMatrices, changePts) = simulateVAR(n, numChanges, Phi, mean, covChange=lambda s, i: 3**(i+1) *s)
+		(data, covariances, wMatrices, changePts) = simulateVAR(n, numChanges, PhiList, mean, \
+			# covChange=lambda s, i: 3**(i+1) *s, \
+			meanShift=lambda mu, i: i*mu)
+
+		logger.info("Mean: %s", mean.__str__())
+		logger.info("Change Points: %s", changePts.__str__())
+		logger.info("Data Length: %d", len(data))
+		
+		# import matplotlib.pyplot as plt
+		# from mpl_toolkits.mplot3d import Axes3D
+		# fig = plt.figure()
+		# ax = fig.add_subplot(111, projection='3d')
+		# ax.plot(range(n), data[:,0], data[:,1])
+		# plt.legend()
+		# plt.show()
 
 		if ( np.sum(np.isnan(data)) == 0 and np.sum(np.isinf(data)) == 0 ):
 			break
@@ -161,16 +218,16 @@ for i in range(runs):
 	logger.info("Change Points: %s", changePts.__str__())
 	logger.debug("Data:\n%s", data.__str__())
 	logger.debug("Covariances:\n%s", covariances.__str__())
-	logger.debug("W Matrices:\n%s", wMatrices.__str__())
-	logger.debug("Phi:\n%s", Phi.__str__())
-	logger.debug("1 / |Phi Eigs|: %s", (1.0/np.abs(w)).__str__())
+	# logger.debug("W Matrices:\n%s", wMatrices.__str__())
+	logger.debug("Phis:\n%s", Phis.__str__())
+	# logger.debug("1 / |Phi Eigs|: %s", (1.0/np.abs(w)).__str__())
 
 	paramMap["run"] = i
 	paramMap["k"] = k
 	paramMap["changePointCount"] = numChanges
 	paramMap["changePoints"] = changePts
 	paramMap["mean"] = mean.tolist()
-	paramMap["phi"] = Phi.tolist()
+	paramMap["phis"] = Phis
 	paramMap["cov"] = covariances.tolist()
 
 	df = pd.DataFrame(data)

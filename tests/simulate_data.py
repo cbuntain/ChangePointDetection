@@ -1,8 +1,9 @@
 import numpy as np
 
-def simulateVAR(n, numChanges, phi, mean, covChange=lambda sigma, i: sigma, meanShift=lambda mu, i: 0):
+def simulateVAR(n, numChanges, phis, mean, covChange=lambda sigma, i: sigma, meanShift=lambda mu, i: mu):
 
     k = mean.shape[0]
+    order = len(phis)
 
     data = np.zeros((n, k))
     covariances = np.zeros((numChanges + 1, k, k))
@@ -48,16 +49,31 @@ def simulateVAR(n, numChanges, phi, mean, covChange=lambda sigma, i: sigma, mean
         innovations = np.random.multivariate_normal(innovation_mean,
                                                     innovation_covariance, n)
 
-        # Prime the process with an initial value
+        # Prime the process with initial values
         if ( start == 0 ):
-            firstValue = np.random.multivariate_normal(mean, innovation_covariance, 1)
-            data[0] = firstValue + innovations[0]
-            start = 1
+            for t in range(order):
+                newValue = np.random.multivariate_normal(np.zeros(k), innovation_covariance, 1)
+                data[t] = newValue + innovations[t]
+            start = order
 
         for t in range(start, end):
-            datapoint = np.dot(phi, (data[t-1] + meanShift(mean, i))) + innovations[t]
+            datapoint = np.zeros((1, k))
+            for phiIndex in range(order):
+                phi = phis[phiIndex]
+                laggedDataPointIndex = t - 1 - phiIndex
+                laggedData = np.dot(phi, (data[laggedDataPointIndex]))
+                datapoint += laggedData
+            datapoint += innovations[t]
             data[t] = datapoint
+
         covariances[i] = innovation_covariance
+
+    # Apply mean shifts
+    for i in range(len(changePoints) - 1):
+        start = changePoints[i]
+        end = changePoints[i+1]
+
+        data[start:end] += meanShift(mean, i)
 
     # Also compute and write W after the first changepoint.
     wMatrices = np.zeros((numChanges, k, k))
