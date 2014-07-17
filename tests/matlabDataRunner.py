@@ -112,7 +112,7 @@ for i in range(realizations):
 	actualCp.append(len(changePts))
 	logger.info("Acutal Change Points: %s", changePts.__str__())
 
-	df = pd.DataFrame(matlabData[:,i:i+k])
+	df = pd.DataFrame(matlabData[:,k*i:k*i+k])
 
 	cusumThread = pool.apply_async(cusumDetector, (df, ))
 	lrtThread = pool.apply_async(lrtDetector, (df, ))

@@ -98,18 +98,36 @@ if __name__ == '__main__':
     import json
 
     if (len(sys.argv) < 2):
-        print "Usage: %s <csv_file>" % sys.argv[0]
+        print "Usage: %s <input_file>" % sys.argv[0]
         exit(1)
 
     dataFile = sys.argv[1]
-    df = pd.read_csv(dataFile, header=0)
 
-    if ( type(df[df.columns[0]][0]) == str ):
-        print "Reindexing using column:", df.columns[0]
-        df['index'] = pd.DatetimeIndex(df[df.columns[0]])
-        df = df.set_index('index')
-        df = df[df.columns[1:]]
-        df = df.sort_index()
+    df = None
+    if (dataFile.endswith('.mat')):
+        # Matlab file...
+        from scipy.io import loadmat
+        inputMatlabData = loadmat(dataFile)
+        matlabData = inputMatlabData['simData']
+
+        realizations = 5000
+        k = matlabData.shape[1] / realizations
+        i = 2
+
+        df = pd.DataFrame(matlabData[:,k*i:k*i+k])
+    elif (dataFile.endswith('.csv')):
+        # CSV file
+        df = pd.read_csv(dataFile, header=0)
+
+        if ( type(df[df.columns[0]][0]) == str ):
+            print "Reindexing using column:", df.columns[0]
+            df['index'] = pd.DatetimeIndex(df[df.columns[0]])
+            df = df.set_index('index')
+            df = df[df.columns[1:]]
+            df = df.sort_index()
+    else:
+        print "Unknown file type:", dataFile
+        exit(1)
 
     print df
 
@@ -122,13 +140,13 @@ if __name__ == '__main__':
 
     stats = []
 
-    # for param in [0.005, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1]:
+    # for param in [0.005, 0.03125, 0.0625, 0.125, 0.25, 0.5, 0.75, 0.99, 1]:
     # for param in [25, 30, 50, 75, 100, 200]:
     for param in [None]:
 
         print param
         # (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=50, eta=0.5, nu=0.125, gamma=0.25)
-        (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=200, eta=0.5, nu=0.125, gamma=0.25)
+        (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=100, eta=3.75, nu=0.99, gamma=0.005)
 
         stats.append((kcdStat, param))
 
