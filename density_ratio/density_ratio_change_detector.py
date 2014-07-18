@@ -13,7 +13,11 @@ import matplotlib.pylab as plt
 
 # Gaussian kernel.
 def kernel(Y1, Y2, sigma):
-    norm_sq = sum([ (Y1[i] - Y2[i])**2 for i in range(len(Y1)) ])
+    try:
+        norm_sq = sum([ (Y1[i] - Y2[i])**2 for i in range(len(Y1)) ])
+    except:
+        print(len(Y1))
+        print(len(Y2))
     return np.exp(- norm_sq / (2 * sigma**2))
 
 
@@ -63,7 +67,7 @@ def KLIEP_algorithm(ref_set, test_set, sigma, ratio_args):
 def select_sigma(ref_set, test_set, sigmas):
     print('Beginning selection of sigma')
     # Cut the test set into 5 folds of roughly equal length.
-    num_folds = 5
+    num_folds = 2 #5
     len_fold = int(len(test_set) / num_folds)
     folds = [ test_set[(i*len_fold) : ((i+1)*len_fold)]
               for i in range(num_folds) ]
@@ -114,18 +118,22 @@ def update_alpha(new_datapoint, alpha, eta, lambdaa,
     alpha.append(eta / c)
     alpha = np.matrix(alpha).T
 
+    # Shift the reference set forward, and move the beginning
+    # of the test set forward.
+    ref_set.append(test_set[0])
+    del test_set[0]
+    del ref_set[0]
+
     b = [ 1 / len(ref_set) * sum([ kernel(ref_set[i], test_set[l], sigma)
                                    for i in range(len(ref_set)) ])
-          for l in range(1, len(test_set)) ]
+          for l in range(len(test_set)) ]
     b = np.matrix(b).T
 
+    # Satisfy feasibility constraints.
     zeros = np.matrix([0] * len(alpha)).T
     alpha = alpha + (1 - b.T * alpha)[0,0] * b / (b.T * b)
     alpha = np.maximum(alpha, zeros)
     alpha = alpha / (b.T * alpha)
-
-    ref_set.append(test_set[0])
-    del test_set[0]
 
     return alpha, ref_set, test_set
 
@@ -178,12 +186,13 @@ def online_algorithm(data, window_size, len_ref_set, len_test_set,
             print('Score={}'.format(score))
 
             if score > threshold:
-                changepoint.append(t)
+                changepoints.append(t)
                 print('changepoint: {}'.format(t))
                 
                 # If we're out of data, abort.
-                if t + len_ref_set + len_test_set > len(data):
+                if t + len_ref_set + len_test_set + window_size > len(data):
                     done = True
+                    break
                 # Otherwise, move the reference and test sets to after the
                 # changepoint. If this were actually online, it would require
                 # waiting until the current time is
@@ -234,13 +243,13 @@ if __name__ == '__main__':
     len_ref_set = 100 #100
     len_test_set = 100 #100
     threshold = 0.4
-    eta = 1.0
+    eta = 1.0 ######## try eta=0
     lambdaa =  0.01
-    sigmas = list(np.arange(1, 3, 1))#list(range(1,11))
+    sigmas = list(np.arange(1, 2, 1))#list(range(1,11))
 
-    changepoints = online_algorithm(data, window_size,
-                                    len_ref_set, len_test_set,
-                                    sigmas, threshold, eta, lambdaa)
+    changepoints, scores = online_algorithm(data, window_size,
+                                            len_ref_set, len_test_set,
+                                            sigmas, threshold, eta, lambdaa)
     print('Final changepoints: {}'.format(changepoints))
     
     plt.plot(scores)
