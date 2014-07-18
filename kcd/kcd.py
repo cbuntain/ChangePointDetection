@@ -24,7 +24,28 @@ def convertDataToCov(data, windowSize=75):
 
     return pd.DataFrame(covariances)
 
-def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625):
+def projectToCov(data):
+
+    zeroedData = data - data.mean()
+    covMatrix = np.dot(zeroedData.T, zeroedData) / float(data.shape[0] - 1)
+
+    newData = np.dot(data, covMatrix)
+
+    return pd.DataFrame(newData)
+
+def eigenDecomp(data):
+
+    zeroedData = data - data.mean()
+    covMatrix = np.dot(zeroedData.T, zeroedData) / float(data.shape[0] - 1)
+
+    (w, v) = np.linalg.eig(covMatrix)
+
+    # newData = np.dot(data, v[:,0])
+    newData = w
+
+    return pd.DataFrame(newData)
+
+def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625, useCov=False):
 
     kcdStat = []
     changePoints = []
@@ -37,17 +58,16 @@ def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625):
         leftData = df[start:targetT]
         rightData = df[targetT:end]
 
-        # leftData = convertDataToCov(leftData, windowSize=d/2)
-        # rightData = convertDataToCov(rightData, windowSize=d/2)
-        
-        # Try and model the time series as VAR1
-        # TODO: Remove if no benefit
-    #     leftModel = tsa.vector_ar.var_model.VAR(leftData.as_matrix())
-    #     leftFit = leftModel.fit()
-    #     leftData = pd.DataFrame(leftFit.resid)
-    #     rightModel = tsa.vector_ar.var_model.VAR(rightData.as_matrix())
-    #     rightFit = rightModel.fit()
-    #     rightData = pd.DataFrame(rightFit.resid)
+        # This seems to work the best for cov
+        if ( useCov == True ):
+            leftData = convertDataToCov(leftData, windowSize=d/2)
+            rightData = convertDataToCov(rightData, windowSize=d/2)
+
+        # leftData = projectToCov(leftData)
+        # rightData = projectToCov(rightData)
+
+        # leftData = eigenDecomp(leftData)
+        # rightData = eigenDecomp(rightData)
 
         leftSvm = svm.OneClassSVM(nu=nu, kernel="rbf", gamma=gamma)
         rightSvm = svm.OneClassSVM(nu=nu, kernel="rbf", gamma=gamma)
@@ -103,7 +123,9 @@ if __name__ == '__main__':
 
     dataFile = sys.argv[1]
 
+    useCov = False
     df = None
+    k = None
     if (dataFile.endswith('.mat')):
         # Matlab file...
         from scipy.io import loadmat
@@ -112,9 +134,13 @@ if __name__ == '__main__':
 
         realizations = 5000
         k = matlabData.shape[1] / realizations
-        i = 2
+        i = 1
 
-        df = pd.DataFrame(matlabData[:,k*i:k*i+k])
+        # df = pd.DataFrame(matlabData[:,k*i:k*i+k])
+        df = pd.DataFrame(matlabData)
+
+        # Use covariance rather than data
+        useCov = True
     elif (dataFile.endswith('.csv')):
         # CSV file
         df = pd.read_csv(dataFile, header=0)
@@ -125,13 +151,15 @@ if __name__ == '__main__':
             df = df.set_index('index')
             df = df[df.columns[1:]]
             df = df.sort_index()
+
+            df = df[df.columns[1:]]
+
+        k = df.shape[1]
     else:
         print "Unknown file type:", dataFile
         exit(1)
 
     print df
-
-    indexlessDf = df[df.columns[1:]]
 
     # import cProfile
     # profiledFunc = lambda: kernelChangeDetection(indexlessDf, d=100, eta=0.35, nu=0.5)
@@ -142,16 +170,22 @@ if __name__ == '__main__':
 
     # for param in [0.005, 0.03125, 0.0625, 0.125, 0.25, 0.5, 0.75, 0.99, 1]:
     # for param in [25, 30, 50, 75, 100, 200]:
-    for param in [None]:
+    for param in range(10):
 
         print param
-        # (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=50, eta=0.5, nu=0.125, gamma=0.25)
-        (changePoints, kcdStat) = kernelChangeDetection(indexlessDf, d=100, eta=3.75, nu=0.99, gamma=0.005)
+        print df.shape
+        i = param
+        localDf = df.icol(slice(k*i,k*i+k))
+
+        print localDf.shape
+
+        # (changePoints, kcdStat) = kernelChangeDetection(df, d=50, eta=0.5, nu=0.125, gamma=0.25)
+        (changePoints, kcdStat) = kernelChangeDetection(localDf, d=50, eta=4.1, nu=0.75, gamma=0.005, useCov=useCov)
 
         stats.append((kcdStat, param))
 
         print "Found Change Points:", changePoints
-        for t in df.index[changePoints]:
+        for t in localDf.index[changePoints]:
             print t
 
         outputFilename = dataFile + '.json'
@@ -163,5 +197,5 @@ if __name__ == '__main__':
     pl.figure(figsize=(8, 6), dpi=80)
     for v in stats:
         pl.plot(v[0], label=str(v[1]))
-    pl.legend()
+    # pl.legend()
     pl.show()

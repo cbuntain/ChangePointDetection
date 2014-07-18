@@ -38,7 +38,7 @@ def lrtWrapper(data):
 
 def kcdWrapper(data, d):
 
-	(changePoints, stats) = kernelChangeDetection(data, eta=0.55, d=d, gamma = 0.25, nu=0.125)
+	(changePoints, stats) = kernelChangeDetection(data, d=d, eta=4.1, nu=0.75, gamma=0.005, useCov=True)
 
 	mappedPts = dict(zip(changePoints, tuple([None]*len(changePoints))))
 
@@ -90,7 +90,8 @@ changePointLocation = matlabData.shape[0] / 2
 
 # Set up the detection functions
 lrtDetector = lrtWrapper
-kcdDetector = lambda x: kcdWrapper(x, matlabData.shape[0]/10)
+# kcdDetector = lambda x: kcdWrapper(x, matlabData.shape[0]/10)
+kcdDetector = lambda x: kcdWrapper(x, int(np.log(matlabData.shape[0])*10))
 cusumDetector = cusumWrapper
 
 # Arrays for recording accuracy

@@ -75,6 +75,7 @@ def lrtWrapper(data):
 
 def kcdWrapper(data):
 
+	# These settings worked well for mean shifts
 	(changePoints, stats) = kernelChangeDetection(data, eta=0.7, d=50, gamma=0.005, nu=0.75)
 
 	# DO NOT UNCOMMENT THIS IF YOU RUN THIS FUNCTION AS A THREAD!1
@@ -119,7 +120,7 @@ logger.addHandler(fh)
 # Tunable parameters for testing
 n = 1000
 runs = 100
-kRange = (2,15)
+kRange = (2,10)
 # kRange = (2,2)
 cpRange = (0,4)
 # cpRange = (1,2)
@@ -194,8 +195,8 @@ for i in range(runs):
 		mean = np.random.random_integers(100, size=(k,))
 
 		(data, covariances, wMatrices, changePts) = simulateVAR(n, numChanges, PhiList, mean, \
-			# covChange=lambda s, i: 3**(i+1) *s, \
-			meanShift=lambda mu, i: i*mu)
+			covChange=lambda s, i: s, \
+			meanShift=lambda mu, i: (i+1)*mu)
 
 		logger.info("Mean: %s", mean.__str__())
 		logger.info("Change Points: %s", changePts.__str__())
@@ -227,7 +228,7 @@ for i in range(runs):
 	paramMap["changePointCount"] = numChanges
 	paramMap["changePoints"] = changePts
 	paramMap["mean"] = mean.tolist()
-	paramMap["phis"] = Phis
+	paramMap["phis"] = [x.tolist() for x in Phis]
 	paramMap["cov"] = covariances.tolist()
 
 	df = pd.DataFrame(data)
@@ -269,7 +270,7 @@ for i in range(runs):
 			# print "W-Matrix:\n", detectedPoints[cp]
 
 			flag = False
-			ptRange = 20
+			ptRange = 50
 			for realChangePt in changePts:
 				if ( cp >= realChangePt - ptRange and cp <= realChangePt + ptRange ):
 					
