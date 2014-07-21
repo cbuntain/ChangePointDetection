@@ -13,11 +13,7 @@ import matplotlib.pylab as plt
 
 # Gaussian kernel.
 def kernel(Y1, Y2, sigma):
-    try:
-        norm_sq = sum([ (Y1[i] - Y2[i])**2 for i in range(len(Y1)) ])
-    except:
-        print(len(Y1))
-        print(len(Y2))
+    norm_sq = sum([ (Y1[i] - Y2[i])**2 for i in range(len(Y1)) ])
     return np.exp(- norm_sq / (2 * sigma**2))
 
 
@@ -67,7 +63,7 @@ def KLIEP_algorithm(ref_set, test_set, sigma, ratio_args):
 def select_sigma(ref_set, test_set, sigmas):
     print('Beginning selection of sigma')
     # Cut the test set into 5 folds of roughly equal length.
-    num_folds = 2 #5
+    num_folds = 3 #5
     len_fold = int(len(test_set) / num_folds)
     folds = [ test_set[(i*len_fold) : ((i+1)*len_fold)]
               for i in range(num_folds) ]
@@ -174,16 +170,19 @@ def online_algorithm(data, window_size, len_ref_set, len_test_set,
         t = start + len_ref_set + len_test_set + window_size
         while t != len(data):
             print('Beginning update of alpha: t={}'.format(t))
+            # Get new weights.
             alpha, ref_set, test_set = update_alpha(data[t], alpha,
                                                     eta, lambdaa,
                                                     ref_set, test_set, sigma)
+
+            # Compute the score.
             ratios = [ sum([ alpha[l] * kernel(test_set[i], test_set[l], sigma)
                              for l in range(len(test_set)) ])
                        for i in range(len(test_set)) ]
             log_ratios = [ np.log(r) for r in ratios ]
             score = sum(log_ratios)[0,0]
             scores.append(score)
-            print('Score={}'.format(score))
+            print('Score = {}'.format(score))
 
             if score > threshold:
                 changepoints.append(t)
@@ -214,6 +213,46 @@ def online_algorithm(data, window_size, len_ref_set, len_test_set,
             
 
 
+# Uses bootstrap to figure out threshold.
+def get_threshold(ref_pts, significance_level, len_test_set):
+    num_samples = 5000
+    scores = []
+    for i in range(num_samples):
+        # Randomly draw len_test_set points from the empirical distribution
+        # of ref_pts with replacement. These will be used as arguments
+        # for kernel density estimation.
+        args = [ ref_pts[np.random.randint(0, len(ref_pts))]
+                 for j in range(len_test_set) ]
+
+        # First compute the probability densities for the arg points using
+        # kernel density estimation. This will be the numerator of the
+        # likelihood ratio. Repeat the same procedure for the denominator
+        # of the likelihood ratio.
+        ratio = []
+        for j in range(2):
+            # Randomly draw num_sample points from the empirical distribution
+            # of ref_pts with replacement. These will be used as kernel
+            # centers for kernel density estimation.
+            sample = [ ref_pts[np.random.randint(0, len(ref_pts))]
+                       for j in range(len(ref_pts)) ]
+            # Place a kernel each of these points and then compute the
+            # probability densities of the arg points.
+            ratio.append([ sum([ kernel(arg, sample_pt, 1)
+                                 for sample_pt in sample ]) / len(sample)
+                           for arg in args ])
+        numerator = ratio[0]
+        denominator = ratio[1]
+
+        # Compute the log likelihood ratio (i.e., score) for each arg point.
+        score = sum([ np.log(numerator[i] / denominator[i])
+                      for i in range(len(args)) ])
+        scores.append(score)
+    plt.plot(scores)
+    plt.show()
+            
+
+
+
 if __name__ == '__main__':
     # Import the data.
     input_filename = sys.argv[1]
@@ -239,13 +278,19 @@ if __name__ == '__main__':
             data[i][d] = data[i][d] / maxx
 
     # The following parameter settings mostly follow page 11.
-    window_size = 80 #80
+    window_size = 50 #80
     len_ref_set = 100 #100
     len_test_set = 100 #100
     threshold = 0.4
     eta = 1.0 ######## try eta=0
     lambdaa =  0.01
-    sigmas = list(np.arange(1, 2, 1))#list(range(1,11))
+    sigmas = list(np.arange(10, 12, 1))#list(range(1,11))
+
+
+
+    ref_set, test_set = get_ref_test_sets(data, 0, window_size, 1000, 1000)
+    get_threshold(ref_set, 0.05, len_test_set)
+
 
     changepoints, scores = online_algorithm(data, window_size,
                                             len_ref_set, len_test_set,
