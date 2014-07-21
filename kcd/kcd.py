@@ -45,13 +45,16 @@ def eigenDecomp(data):
 
     return pd.DataFrame(newData)
 
-def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625, useCov=False):
+def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625, useCov=False, verbose=False):
 
     kcdStat = []
     changePoints = []
 
     for targetT in range(d,df.shape[0] - d):
         
+        if ( verbose ):
+            print targetT, "/", df.shape[0]
+
         start = targetT - d
         end = targetT + d
         
@@ -152,8 +155,6 @@ if __name__ == '__main__':
             df = df[df.columns[1:]]
             df = df.sort_index()
 
-            df = df[df.columns[1:]]
-
         k = df.shape[1]
     else:
         print "Unknown file type:", dataFile
@@ -170,17 +171,20 @@ if __name__ == '__main__':
 
     # for param in [0.005, 0.03125, 0.0625, 0.125, 0.25, 0.5, 0.75, 0.99, 1]:
     # for param in [25, 30, 50, 75, 100, 200]:
-    for param in range(10):
+    for param in [None]:
 
         print param
         print df.shape
-        i = param
-        localDf = df.icol(slice(k*i,k*i+k))
+        # i = param
+        # localDf = df.icol(slice(k*i,k*i+k))
+        localDf = df
 
         print localDf.shape
 
         # (changePoints, kcdStat) = kernelChangeDetection(df, d=50, eta=0.5, nu=0.125, gamma=0.25)
-        (changePoints, kcdStat) = kernelChangeDetection(localDf, d=50, eta=4.1, nu=0.75, gamma=0.005, useCov=useCov)
+        (changePoints, kcdStat) = kernelChangeDetection(localDf, d=50, eta=4.1, nu=0.75, gamma=0.005, 
+            useCov=useCov, 
+            verbose=True)
 
         stats.append((kcdStat, param))
 
