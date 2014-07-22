@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3 -u
 
 # The following code is based on Kawahara and Sugiyama's paper,
 # "Sequential Change-Point Detection Based on Direct
@@ -135,6 +135,8 @@ def update_alpha(new_datapoint, alpha, eta, lambdaa,
 
 
 
+# Cut a reference set and a test set out of the data, starting
+# at t=start.
 def get_ref_test_sets(data, start,
                       window_size, len_ref_set, len_test_set):
     ref_set = [ np.array(data[t : (t+window_size)]).flatten() 
@@ -184,6 +186,27 @@ def online_algorithm(data, window_size, len_ref_set, len_test_set,
             scores.append(score)
             print('Score = {}'.format(score))
 
+            # Bootstrap a distribution of the score.
+            num_samples = 100
+            bootstrap_distribution = []
+            for i in range(num_samples):
+                # Randomly draw len_test_set points from the empirical distribution
+                # of the reference set with replacement.
+                args = [ ref_set[np.random.randint(0, len(ref_set))]
+                         for j in range(len(test_set)) ]
+
+                # Then compute the score of these points.
+                ratios = [ sum([ alpha[l] * kernel(args[i], test_set[l], sigma)
+                                 for l in range(len(test_set)) ])
+                           for i in range(len(args)) ]
+                log_ratios = [ np.log(r) for r in ratios ]
+                score = sum(log_ratios)[0,0]
+                bootstrap_distribution.append(scores)
+                
+                plt.hist(scores)
+                plt.show()
+            
+
             if score > threshold:
                 changepoints.append(t)
                 print('changepoint: {}'.format(t))
@@ -215,9 +238,10 @@ def online_algorithm(data, window_size, len_ref_set, len_test_set,
 
 # Uses bootstrap to figure out threshold.
 def get_threshold(ref_pts, significance_level, len_test_set):
-    num_samples = 5000
+    num_samples = 100
     scores = []
     for i in range(num_samples):
+        print('Sample {}'.format(i))
         # Randomly draw len_test_set points from the empirical distribution
         # of ref_pts with replacement. These will be used as arguments
         # for kernel density estimation.
@@ -237,7 +261,7 @@ def get_threshold(ref_pts, significance_level, len_test_set):
                        for j in range(len(ref_pts)) ]
             # Place a kernel each of these points and then compute the
             # probability densities of the arg points.
-            ratio.append([ sum([ kernel(arg, sample_pt, 1)
+            ratio.append([ sum([ kernel(arg, sample_pt, 10)
                                  for sample_pt in sample ]) / len(sample)
                            for arg in args ])
         numerator = ratio[0]
@@ -248,7 +272,7 @@ def get_threshold(ref_pts, significance_level, len_test_set):
                       for i in range(len(args)) ])
         scores.append(score)
     plt.plot(scores)
-    plt.show()
+    plt.savefig('thresh.png')
             
 
 
@@ -284,13 +308,13 @@ if __name__ == '__main__':
     threshold = 0.4
     eta = 1.0 ######## try eta=0
     lambdaa =  0.01
-    sigmas = list(np.arange(10, 12, 1))#list(range(1,11))
+    sigmas = list(np.arange(10, 18, 1))#list(range(1,11))
 
-
-
+    '''
+    # Use boostrap to get the threshold.
     ref_set, test_set = get_ref_test_sets(data, 0, window_size, 1000, 1000)
     get_threshold(ref_set, 0.05, len_test_set)
-
+    '''
 
     changepoints, scores = online_algorithm(data, window_size,
                                             len_ref_set, len_test_set,
@@ -298,4 +322,4 @@ if __name__ == '__main__':
     print('Final changepoints: {}'.format(changepoints))
     
     plt.plot(scores)
-    plt.show()
+    plt.savefig('scores.png')
