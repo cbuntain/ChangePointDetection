@@ -1,0 +1,93 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{calrsfs}
+\usepackage[ruled]{algorithm2e}
+
+\newcommand\prn[1]{\left( #1 \right)}
+\newcommand\bkt[1]{\left[ #1 \right]}
+\newcommand\set[1]{\left\{ #1 \right\}}
+\newcommand\abs[1]{\left| #1 \right|}
+\newcommand\hfirst{{h_{\mathrm{first}}}}
+\newcommand\hlast{{h_{\mathrm{last}}}}
+\DeclareMathOperator*{\argmax}{\arg\!max}
+
+\SetVline
+
+\pagestyle{empty}
+
+\frenchspacing
+
+\begin{document}
+
+\section{Definitions}
+
+$$\hat e_t=y_t-\hat y_t$$
+$$\hat\Sigma_\ell^r=\frac{1}{r-\ell}\sum_{t=\ell}^r\hat e_t\hat e_t^\top$$
+$$A_\ell^r(h)=\sum_{t=\ell}^h\hat e_t^\top\prn{\hat\Sigma_\ell^r}^{-1}\hat e_t$$
+$$C_\ell^r(h)=\frac{h}{\sqrt{2k(r-\ell+1)}}\prn{\frac{A_\ell^r(h)}{h}-\frac{A_\ell^r(r-\ell+1)}{r-\ell+1}}$$
+$$\Gamma_\ell^r=\max_{h\in\set{\ell,\ldots,r}}|C_\ell^r(h)|$$
+$$\bar h_\ell^r=\argmax_{h\in\set{\ell,\ldots,r}}|C_\ell^r(h)|$$
+$$d=k(p+q+1)+\frac{k(k+1)}{2}+1$$
+
+Given a significance level of $\alpha$, define $C_\alpha$ such that
+$$\Pr\prn{\sup_{0\le v\le1}|M_v^0|\le C_\alpha}=1+2\sum_{i=1}^\infty(-1)^i\exp(-2i^2a^2)=1-\alpha,$$
+where $M_v^0$ is the random variable of a standard Brownian bridge at time $v$.
+
+\section{Cusum algorithm}
+
+\begin{algorithm}[H]
+ \nlset{Step 1}fit VARIMA model to $y_t$\;
+ compute residuals $\hat e_t$\;
+ $candidates\gets\set{1,T}$\;
+ $\hfirst\gets d+1$;\quad$\hlast\gets T-d$\;
+ \While{True}{
+   \nlset{Step 2}\eIf{$\Gamma_\hfirst^\hlast<C_\alpha$}{
+     break\;
+   }{
+     $\Gamma_{\mathrm{old}}\gets\Gamma_\hfirst^\hlast$;\quad$\bar h_{\mathrm{old}}\gets\bar h_\hfirst^\hlast$\;
+     $\Gamma\gets\Gamma_{\text{old}}$;\quad$\bar h\gets\bar h_{\text{old}}$\;
+     \nlset{Step 3a}\While{$\Gamma>C_\alpha$}{
+       $t_2\gets\bar h-1$\;
+       $\Gamma=\Gamma_{\hfirst}^{t_2}$\;
+     }
+     $\hfirst\gets t_2$\;
+     $\Gamma\gets\Gamma_{\text{old}}$;\quad$\bar h\gets\bar h_{\text{old}}$\;
+     \nlset{Step 3b}\While{$\Gamma>C_\alpha$}{
+       $t_1\gets\bar h+1$\;
+       $\Gamma=\Gamma_{t_1}^{\hlast}$\;
+     }
+     $\hlast\gets t_1$\;
+     \nlset{Step 3c}\eIf{$|\hlast-\hfirst|>d$}{
+       append $\hfirst, \hlast$ to $candidates$\;
+       $\hfirst=\hfirst+d$;\quad$\hlast=\hlast-d$\;
+     }{
+       append $\bar h_{\text{old}}$ to $candidates$\;
+       break\;       
+     }
+   }
+ }
+ sort $candidates$\;
+ $\set{x_1,\ldots,x_s}\gets candidates$\;
+ \nlset{Step 4}\Repeat{convergence}{
+   \For{$i\in\set{1,\ldots,s-2}$}{
+     \If{$\Gamma_{x_i+1}^{x_{i+2}-1}<C_\alpha$}{
+       remove $x_{i+1}$ from $candidates$\;
+     }
+   }
+ }
+ remove $1,T$ from $candidates$\;
+ $changepoints\gets\set{x+1:x\in candidates}$\;
+
+ \caption{Cusum algorithm by Galeano and Pe\~na.}
+\end{algorithm}
+
+
+
+
+\end{document}

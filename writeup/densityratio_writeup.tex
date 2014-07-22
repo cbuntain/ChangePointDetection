@@ -1,0 +1,82 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{mathrsfs}
+
+\newcommand\prn[1]{\left( #1 \right)}
+\newcommand\bkt[1]{\left[ #1 \right]}
+\newcommand\set[1]{\left\{ #1 \right\}}
+\newcommand\abs[1]{\left| #1 \right|}
+\newcommand\RR{\mathbb{R}}
+\renewcommand\epsilon{\varepsilon}
+\newcommand\yy{\boldsymbol{y}}
+\newcommand\YY{\boldsymbol{Y}}
+\newcommand\rf{{\mathrm{rf}}}
+\newcommand\te{{\mathrm{te}}}
+
+\pagestyle{empty}
+
+\frenchspacing
+
+\title{\normalsize\sc Description of Kawahara and Sugiyama's online changepoint detection algorithm based on direct density-ratio estimation}
+\author{\normalsize Christopher Natoli}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Framework of the solution}
+
+Suppose $\set{\yy(t)}_{t=1}^T\subset\RR^d$ is a $d$-dimensional time series and let $\YY(t)\in\RR^{dk}$ be a $k$-long subsequence of the data beginning at time $t$:
+$$\YY(t):=\bkt{\yy(t)^\top, \yy(t+1)^\top, \ldots, \yy(t+k-1)^\top}^\top,$$
+i.e., $\YY(t)$ is the concatenation of the $k$ vectors $\yy(t),\ldots,\yy(t+k-1)$. Rather than consider the ``feature space'' or ``state space'' $\RR^d$, i.e., the space in which the datapoints live, we will consider the space $\RR^{dk}$ in which the subequences $\YY(t)$ live, since these subsequences can describe some of the temporal structure of the time series that points in $\RR^d$ cannot.
+
+This online algorithm makes use of a sliding window. Divide the sliding window into two intervals, one before the possible changepoint called the reference interval and one after the possible changepoint called the test interval. Denote the beginnings of the reference and test intervals by $t_\rf$ and $t_\te$, respectively, and denote their lengths by $n_\rf$ and $n_\te$. If $t$ is the current time, i.e., the front of the sliding window, then $t=t_\te+n_\te$ and $t_\te=t_\rf+n_\rf$. Define $\YY_\rf(i)=\YY(t_\rf+i-1)$ and $\YY_\te(i)=\YY(t_\te+i-1)$. Let $p_\rf$ and $p_\te$ be the probability densities of the reference and test intervals, respectively.
+
+We want to test
+\begin{align*}
+  H_0\colon&p(\YY(i))=p_\rf(Y(i))\quad\quad\text{for $i=t_\rf,\ldots,t-1$}\\
+  \text{vs}\quad\quad
+  H_1\colon&p(\YY(i))=p_\rf(Y(i))\quad\quad\text{for $i=t_\rf,\ldots,t_\te-1$}\\
+  &p(\YY(i))=p_\te(Y(i))\quad\quad\text{for $i=t_\te,\ldots,t-1$}.
+\end{align*}
+The likelihood ratio and log-likelihood ratio for these hypotheses are therefore
+\begin{align*}
+  \Lambda
+  &=\frac{\prod_{i=1}^{n_\rf}p_\rf(\YY_\rf(i))\prod_{i=1}^{n_\te}p_\te(\YY_\te(i))}{\prod_{i=1}^{n_\rf}p_\rf(\YY_\rf(i))\prod_{i=1}^{n_\te}p_\rf(\YY_\te(i))}\\
+  &=\frac{\prod_{i=1}^{n_\te}p_\te(\YY_\te(i))}{\prod_{i=1}^{n_\te}p_\rf(\YY_\te(i))}\\
+  S:=\log\Lambda&=\sum_{i=1}^{n_\te}\log\frac{p_\te(\YY_\te(i))}{p_\rf(\YY_\te(i))}.
+\end{align*}
+We choose the log-likelihood ratio $S$ as our score. If the score is greater than a certain threshold, %%%%
+then we say that tme $t_\te$ is a changepoint.
+
+\section{Kullback-Leibler importance estimation}
+
+Rather than estimate the density ratio $w:=\frac{p_\te}{p_\rf}$ by first individually estimating the densities $p_\te$ and $p_\rf$ and then dividing, the ratio itself will be directly estimated by employing the Kullback-Leibler Importance Estimation Procedure (KLIEP) developed by Sugiymama, et. al. [cite!].
+
+Suppose the estimate $\hat w$ lives in a finite-dimensional function space spanned by the basis functions $\set{\phi_\ell}_{\ell=1}^b$,  where $\phi_\ell\colon\RR^{dk}\to\RR^+$ for all $\ell$. Then $\hat w(\cdot)=\sum_{\ell=1}^b\alpha_\ell\phi_\ell(\cdot)$, and so the parameters we want to learn are the coordinates $\set{\alpha_\ell}_{\ell=1}^b$. We do so by minimizing the Kullback-Leibler divergence of $\hat p_\te=p_\rf\hat w$ from the true distribution $p_\te$, i.e.,
+$$D_{KL}(p_\te\|\hat p_\te)=\int p_\te(\YY)\log\frac{p_\te(\YY)}{p_\rf(\YY)\hat w(\YY)}\,d\YY.$$
+The minimization problem is subject to two constraints. First, $w$ is nonnegative: requiring $\alpha_\ell\ge0$ for all $\ell$ implies $\hat w\ge0$. Second, $p_\te$ is a probability density and therefore integrates to 1: the same should hold for $p_\rf\hat w$. Approximation reduces this constrained minimization problem, which is convex, to the following maximization problem:
+\begin{align*}
+  \max_{\set{\alpha_\ell}_{\ell=1}^b}&\set{\sum_{i=1}^{n_\te}\log\sum_{\ell=1}^b\alpha_\ell\phi_\ell(\YY_\te(i))}\\
+  \text{subject to }&\frac{1}{n_\rf}\sum_{i=1}^{n_\rf}\sum_{\ell=1}^b\alpha_\ell\phi_\ell(\YY_\rf(i))=1\\
+  &\alpha_\ell\ge0,\quad\ell=1,\ldots,b.
+\end{align*}
+
+For this changepoint algorithm, we choose that the basis functions $\phi_\ell(\cdot)$ are Gaussian kernels $K_\sigma(\cdot,\YY_\te(\ell))$ centered at the test subsequences, where
+$$K_\sigma(\YY,\YY')=\exp\prn{-\frac{\|\YY-\YY'\|_2^2}{2\sigma^2}}.$$
+It follows that $b=n_\te$. The rationale for centering kernels on the test points is that it is effective to place kernels where the target function $w$ is large. The ratio $w$ is large when $p_\te$ is large and/or when $p_\rf$ is small. The density $p_\te$ of the test distribution is probably large when its argument is pulled from the test distribution, i.e., a test point $\YY_\te(i)$. Kernels are therefore centered at the test points $\set{\YY_\te(i)}_{i=1}^{n_\te}$.
+
+The kernel parameter $\sigma$ is selected by cross-validation. The maximization problem is solved by gradient ascent.
+
+\section{Updating $\set{\alpha_\ell}$ online}
+
+Kawahara and Sugiyama propose a way to update $\set{\alpha_\ell}$ in an online manner rather than repeating the above procedure with every new datapoint.
+
+\end{document}
