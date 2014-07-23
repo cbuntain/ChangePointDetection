@@ -35,7 +35,7 @@ def KLIEP_algorithm(ref_set, test_set, sigma, ratio_args):
     alpha = np.matrix([1] * len(test_set)).T
 
     # Perform gradient ascent.
-    learning_rate = 0.001 #0.001
+    learning_rate = 0.001
     zeros = np.matrix([0] * len(alpha)).T
     old_alpha = alpha
     while True:
@@ -47,7 +47,7 @@ def KLIEP_algorithm(ref_set, test_set, sigma, ratio_args):
         # Check for L1 convergence.
         norm = sum([ np.abs(alpha[i] - old_alpha[i])
                      for i in range(len(alpha)) ])
-        if norm < 0.01:#0.001:
+        if norm < 0.001:
             print('Converged')
             break
 
@@ -190,8 +190,8 @@ def online_algorithm(data, window_size, len_ref_set, len_test_set,
             num_samples = 100
             bootstrap_distribution = []
             for i in range(num_samples):
-                # Randomly draw len_test_set points from the empirical distribution
-                # of the reference set with replacement.
+                # Randomly draw len_test_set points from the empirical
+                # distribution of the reference set with replacement.
                 args = [ ref_set[np.random.randint(0, len(ref_set))]
                          for j in range(len(test_set)) ]
 
@@ -201,12 +201,16 @@ def online_algorithm(data, window_size, len_ref_set, len_test_set,
                            for i in range(len(args)) ]
                 log_ratios = [ np.log(r) for r in ratios ]
                 score = sum(log_ratios)[0,0]
-                bootstrap_distribution.append(scores)
-                
-                plt.hist(scores)
-                plt.show()
-            
+                bootstrap_distribution.append(score)
 
+            bootstrap_distribution.sort()
+            critical_value = bootstrap_distribution[-int(.05*num_samples)]
+            last = bootstrap_distribution[-1]
+            print('crit = {0:.4f}; max = {1:.4f}'.format(critical_value,
+                                                         last))
+            if score > critical_value:
+                print('BYPASSED THRESHOLD')
+                
             if score > threshold:
                 changepoints.append(t)
                 print('changepoint: {}'.format(t))
