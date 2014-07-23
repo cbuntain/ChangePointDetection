@@ -12,10 +12,12 @@
 \newcommand\bkt[1]{\left[ #1 \right]}
 \newcommand\set[1]{\left\{ #1 \right\}}
 \newcommand\abs[1]{\left| #1 \right|}
-\newcommand\RR{\mathbb{R}}
 \renewcommand\epsilon{\varepsilon}
+\newcommand\RR{\mathbb{R}}
 \newcommand\yy{\boldsymbol{y}}
-\newcommand\YY{\boldsymbol{Y}}
+\newcommand\YY{{\boldsymbol{Y}}}
+\newcommand\YYY{\mathcal{Y}}
+\newcommand\HH{\mathcal{H}}
 \newcommand\rf{{\mathrm{rf}}}
 \newcommand\te{{\mathrm{te}}}
 
@@ -23,7 +25,7 @@
 
 \frenchspacing
 
-\title{\normalsize\sc Description of Kawahara and Sugiyama's online changepoint detection algorithm based on direct density-ratio estimation}
+\title{\normalsize\sc Description of Kawahara and Sugiyama's online changepoint detection algorithm based on direct density ratio estimation}
 \author{\normalsize Christopher Natoli}
 \date{}
 
@@ -56,7 +58,7 @@ The likelihood ratio and log-likelihood ratio for these hypotheses are therefore
 We choose the log-likelihood ratio $S$ as our score. If the score is greater than a certain threshold, %%%%
 then we say that tme $t_\te$ is a changepoint.
 
-\section{Kullback-Leibler importance estimation}
+\section{Directly estimating the density ratio}
 
 Rather than estimate the density ratio $w:=\frac{p_\te}{p_\rf}$ by first individually estimating the densities $p_\te$ and $p_\rf$ and then dividing, the ratio itself will be directly estimated by employing the Kullback-Leibler Importance Estimation Procedure (KLIEP) developed by Sugiymama, et. al. [cite!].
 
@@ -78,5 +80,34 @@ The kernel parameter $\sigma$ is selected by cross-validation. The maximization 
 \section{Updating $\set{\alpha_\ell}$ online}
 
 Kawahara and Sugiyama propose a way to update $\set{\alpha_\ell}$ in an online manner rather than repeating the above procedure with every new datapoint.
+
+Let $\YYY_\te=\set{\YY_\te(i)}_{i=1}^{n_\te}$ be the set of test subsequences. Since the Gaussian kernel $K_\sigma\colon\YYY_\te\times\YYY_\te\to\RR^+$ is a positive definite kernel, %proof?
+we have by the Moore-Aronszajn theorem that there exists a unique Hilbert space $\HH$ of functions on $\YYY_\te$ with $K_\sigma$ as the reproducing kernel. Moreover, the span of $\set{K_\sigma(\cdot,\YY))}_{\YY\in\YYY_\te}$ is dense in $\HH$, so if $w\in\HH$, then $\hat w$ can approximate $w$ arbitrarily well. This somewhat justifies our previous assumption that $\hat w$ lives in the span of $\set{K_\sigma(\cdot,\YY))}_{\YY\in\YYY_\te}$.
+
+We choose to minimize the regularized risk functional
+$$E_i(\hat w)=-\log\hat w(\YY_\te(i))+\frac{\lambda}{2}\|\hat w\|_\HH^2$$
+over the span of $\set{K_\sigma(\cdot,\YY)}_{\YY\in\YYY_\te}$, where $-\log\hat w(\YY_\te(i))$ is the loss function, $\frac\lambda2\|\hat w\|_\HH^2$ is the regularization term, and $\|\cdot\|_\HH$ is the norm in $\HH$. Rather than minimize the average regularized risk $\frac{1}{n_\te}\sum_{i=1}^{n_\te}E_i(\hat w)$, we follow the method of stochastic gradient descent [cite!] and minimize the regularized risk $E_{n_\te+1}$ at only the new training example.
+
+Before differentiating the regularized risk with respect to the function $\hat w$, we note a few useful derivatives. Let $e_\YY(\hat w):=\hat w(\YY)$ be the evaluation functional at $\YY$. Since $K_\sigma$ is a reproducing kernel, we have by definition that
+$$\langle\hat w(\cdot),K_\sigma(\cdot,\YY)\rangle=\hat w(\YY)=e_\YY(\hat w).$$
+Therefore,
+$$\partial_{\hat w}e_\YY(\hat w)=\partial_{\hat w}\langle(\hat w(\cdot),K_\sigma(\cdot,\YY)\rangle=K_\sigma(\cdot,\YY)$$
+and so
+$$\partial_{\hat w}\prn{-\log\hat w(\YY)}
+=\partial_{\hat w}\prn{-\log e_\YY(\hat w)}
+=-\frac{1}{\log e_\YY(\hat w)}\partial_{\hat w}e_\YY(\hat w)
+=-\frac{K_\sigma(\cdot,\YY)}{\log \hat w(\YY)}.
+$$
+We also note that
+$$\partial_{\hat w}\prn{\frac12\|\hat w\|^2}=\hat w.$$
+Putting these together, we find that
+$$\partial_{\hat w}E_i(\hat w)=-\frac{K_\sigma(\cdot,\YY_\te(i))}{\log \hat w(\YY_\te(i))}+\lambda\hat w.$$
+
+
+
+
+
+
+
 
 \end{document}

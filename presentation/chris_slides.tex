@@ -30,12 +30,6 @@
 
 \newcommand\prn[1]{\left( #1 \right)}
 \newcommand\set[1]{\left\{ #1 \right\}}
-\newcommand\ee{\boldsymbol{e}}
-\newcommand\yy{\boldsymbol{y}}
-\newcommand\YY{\boldsymbol{Y}}
-\newcommand\RR{\mathbb{R}}
-\newcommand\rf{{\mathrm{rf}}}
-\newcommand\te{{\mathrm{te}}}
 
 
 \title[Changepoint detection]{\sc Algorithms for detecting changepoints in data}
@@ -57,15 +51,15 @@
   \mathrm{test\;statistic}=
   \onslide<5->{\frac{h}{\sqrt{2kn}}\bigg(}
   \frac{
-    \onslide<1->{\sum_{t=1}^h\ee_t}
+    \onslide<1->{\sum_{t=1}^h\boldsymbol{e}_t}
     \onslide<2->{^\top}
     \onslide<3->{(\hat\Sigma)^{-1}}
-    \onslide<2->{\ee_t}
+    \onslide<2->{\boldsymbol{e}_t}
   }{\onslide<3->{h}}
-  \onslide<4->{-\frac{\sum_{t=1}^n\ee_t^\top(\hat\Sigma)^{-1}\ee_t}{n}}
+  \onslide<4->{-\frac{\sum_{t=1}^n\boldsymbol{e}_t^\top(\hat\Sigma)^{-1}\boldsymbol{e}_t}{n}}
   \onslide<5->{\bigg)}
   $$
-  \onslide<3>{$$\hat\Sigma:=\frac{1}{n-1}\sum_{t=1}^n\ee_t\ee_t^\top$$}
+  \onslide<3>{$$\hat\Sigma:=\frac{1}{n-1}\sum_{t=1}^n\boldsymbol{e}_t\boldsymbol{e}_t^\top$$}
   \vfill
   \tiny{Galeano, Pedro, and Daniel Pe\~{n}a. ``Covariance changes detection in multivariate time series.'' \textit{Journal of Statistical Planning and Inference} 137.1 (2007): 194-211.}
 }
@@ -78,14 +72,15 @@
     \caption{Cusum statistic for a time series with three changepoints.}
   \end{figure}
   \vfill
-  \tiny{Galeano, Pedro, and Daniel Pe\~{n}a. ``Covariance changes detection in multivariate time series.'' \textit{Journal of Statistical Planning and Inference} 137.1 (2007): 194-211.}}
+  \tiny{Galeano, Pedro, and Daniel Pe\~{n}a. ``Covariance changes detection in multivariate time series.'' \textit{Journal of Statistical Planning and Inference} 137.1 (2007): 194-211.}
+}
 
 \frame{
   \frametitlesc{Finding a single changepoint}
   \footnotesize
   \begin{align*}
   \mathrm{test\;statistic}
-  &=\frac{h}{\sqrt{2kn}}\bigg(\frac{\sum_{t=1}^h\ee_t^\top(\hat\Sigma)^{-1}\ee_t}{h}-\frac{\sum_{t=1}^n\ee_t^\top(\hat\Sigma)^{-1}\ee_t}{n}\bigg)\\
+  &=\frac{h}{\sqrt{2kn}}\bigg(\frac{\sum_{t=1}^h\boldsymbol{e}_t^\top(\hat\Sigma)^{-1}\boldsymbol{e}_t}{h}-\frac{\sum_{t=1}^n\boldsymbol{e}_t^\top(\hat\Sigma)^{-1}\boldsymbol{e}_t}{n}\bigg)\\
   \max(\mathrm{test\;statistic})
   &\xrightarrow{D}\sup\set{\text{Brownian bridge}},
   \end{align*}
@@ -109,9 +104,9 @@
 
 \frame{
   \frametitlesc{Moving from datapoints to subsequences}
-  Suppose time series $\yy(t)\in\RR^3$ and denote its $i$th component by $y_i(t)\in\RR$.
+  Suppose time series $\boldsymbol{y}(t)\in\mathbb{R}^3$ and denote its $i$th component by $y_i(t)\in\mathbb{R}$.
   Define the subsequence
-  $$\YY(t)=
+  $$\boldsymbol{Y}(t)=
   \begin{pmatrix}
     y_1(t)\\
     y_2(t)\\
@@ -134,7 +129,7 @@
   \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{subsequence_diagram.png}
-    \caption{Sliding window of subsequences.\\(Reference interval has pdf $p_\rf$ and test interval has pdf $p_\te$.)}
+    \caption{Sliding window of subsequences.\\(Reference interval has pdf $p_{\mathrm{rf}}$ and test interval has pdf $p_{\mathrm{te}}$.)}
   \end{figure}
   \vfill
   \tiny{Kawahara, Yoshinobu and Masashi Sugiyama. ``Sequential change‐point detection based on direct density‐ratio estimation.'' \textit{Statistical Analysis and Data Mining} 5.2 (2012): 114-127.}
@@ -143,39 +138,39 @@
 \frame{
   \frametitlesc{Hypothesis test}
   \begin{align*}
-    H_0\colon&p(\YY(i))=p_\rf(Y(i))\quad\quad\text{for $i=t_\rf,\ldots,t-1$}\\
+    H_0\colon&p(\boldsymbol{Y}(i))=p_{\mathrm{rf}}(Y(i))\quad\quad\text{for $i=t_{\mathrm{rf}},\ldots,t-1$}\\
     \text{vs}\quad
-    H_1\colon&p(\YY(i))=p_\rf(Y(i))\quad\quad\text{for $i=t_\rf,\ldots,t_\te-1$}\\
-    &p(\YY(i))=p_\te(Y(i))\quad\quad\text{for $i=t_\te,\ldots,t-1$}.
+    H_1\colon&p(\boldsymbol{Y}(i))=p_{\mathrm{rf}}(Y(i))\quad\quad\text{for $i=t_{\mathrm{rf}},\ldots,t_{\mathrm{te}}-1$}\\
+    &p(\boldsymbol{Y}(i))=p_{\mathrm{te}}(Y(i))\quad\quad\text{for $i=t_{\mathrm{te}},\ldots,t-1$}.
   \end{align*}
   \onslide<2->{
     $$
-    \mathrm{likelihood\;ratio}=\prod_{i=1}^{n_\te}\frac{p_\te(\YY_\te(i))}{p_\rf(\YY_\te(i))}
+    \mathrm{likelihood\;ratio}=\prod_{i=1}^{n_{\mathrm{te}}}\frac{p_{\mathrm{te}}(\boldsymbol{Y}_{\mathrm{te}}(i))}{p_{\mathrm{rf}}(\boldsymbol{Y}_{\mathrm{te}}(i))}
     $$
   }
-  \vfill
+ \vfill
   \tiny{Kawahara, Yoshinobu and Masashi Sugiyama. ``Sequential change‐point detection based on direct density‐ratio estimation.'' \textit{Statistical Analysis and Data Mining} 5.2 (2012): 114-127.}
 }
 
 \frame{
   \frametitlesc{Directly estimating the density ratio}
   \begin{align*}
-    w(\YY)&=\frac{p_\te(\YY)}{p_\rf(\YY)}\\
+    w(\boldsymbol{Y})&=\frac{p_{\mathrm{te}}(\boldsymbol{Y})}{p_{\mathrm{rf}}(\boldsymbol{Y})}\\
     \onslide<2->{\hat w(\cdot)&=\sum_{\ell=1}^b\alpha_\ell\phi_\ell(\cdot)}
-    \onslide<3->{=\sum_{\ell=1}^{\onslide<4->{n_\te}}\alpha_\ell K_\sigma(\cdot,\onslide<4->{\YY_\te(\ell)})}\\
+    \onslide<3->{=\sum_{\ell=1}^{\onslide<4->{n_{\mathrm{te}}}}\alpha_\ell K_\sigma(\cdot,\onslide<4->{\boldsymbol{Y}_{\mathrm{te}}(\ell)})}\\
   \end{align*}
-  \onslide<3->{Gaussian kernel $K_\sigma(\YY,\YY')=\exp\prn{-\frac{\|\YY-\YY'\|^2}{2\sigma^2}}$}
+  \onslide<3->{Gaussian kernel $K_\sigma(\boldsymbol{Y},\boldsymbol{Y}')=\exp\prn{-\frac{\|\boldsymbol{Y}-\boldsymbol{Y}'\|^2}{2\sigma^2}}$}
   \vfill
   \tiny{Kawahara, Yoshinobu and Masashi Sugiyama. ``Sequential change‐point detection based on direct density‐ratio estimation.'' \textit{Statistical Analysis and Data Mining} 5.2 (2012): 114-127.}
 }
 
 \frame{
   \frametitlesc{Directly estimating the density ratio}
-  $$\hat p_\te(\cdot):=p_\rf(\cdot)\hat w(\cdot)=p_\rf(\cdot)\sum_{\ell=1}^{n_\te}\alpha_\ell K_\sigma(\cdot,\YY_\te(\ell))$$
+  $$\hat p_{\mathrm{te}}(\cdot):=p_{\mathrm{rf}}(\cdot)\hat w(\cdot)=p_{\mathrm{rf}}(\cdot)\sum_{\ell=1}^{n_{\mathrm{te}}}\alpha_\ell K_\sigma(\cdot,\boldsymbol{Y}_{\mathrm{te}}(\ell))$$
   \onslide<2->{
     \begin{align*}
-      \min_{\set{\alpha_\ell}}&\quad\text{Kullback-Leibler divergence}(p_\te\|\hat p_\te)\\
-      \onslide<3->{\text{subject to}&\quad\text{some uninteresting constraints}}
+      \min_{\set{\alpha_\ell}}&\quad\text{Kullback-Leibler divergence}(p_{\mathrm{te}}\|\hat p_{\mathrm{te}})\\
+      \onslide<3->\text{subject to}&\quad\text{some uninteresting constraints}
     \end{align*}
   }
   \vfill
