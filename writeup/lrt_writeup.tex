@@ -1,0 +1,95 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{mathrsfs}
+\usepackage[ruled]{algorithm2e}
+
+\newcommand\prn[1]{\left( #1 \right)}
+\newcommand\bkt[1]{\left[ #1 \right]}
+\newcommand\set[1]{\left\{ #1 \right\}}
+\newcommand\abs[1]{\left| #1 \right|}
+\renewcommand\epsilon{\varepsilon}
+\newcommand\RR{\mathbb{R}}
+\newcommand\yy{\boldsymbol{y}}
+\newcommand\YY{{\boldsymbol{Y}}}
+\newcommand\YYY{\mathcal{Y}}
+\newcommand\HH{\mathcal{H}}
+\newcommand\rf{{\mathrm{rf}}}
+\newcommand\te{{\mathrm{te}}}
+
+\title{Detecting Covariance Changes Using a Likelihood-Ratio Test}
+\author{Cody Buntain}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+
+In Galeano and Pe\~{n}a's work on detecting covariances changes in multivariate data, they proposed two methods for calculating test statistics from which change points could be identified \cite{galeano2007covariance}. 
+These methods model the given data as a vector autoregressive integrated moving average (vARIMA) popular in economics and financial market analysis, extracting the errors (or innovations) from this data, and applying these methods on this error data.
+The first such statistic, on which we focus here, uses a likelihood-ratio test (LRT) to compare two hypotheses: the null hypothesis $H_n$ that the covariance of this error data is best characterized by a single covariance matrix $\Sigma$ versus the alternative hypothesis $H_a$ that, at some time point $h$, the data is best characterized by two separate covariances matrices $\Sigma_1$ before $h$ and $\Sigma_2$ after $h$.
+The logarithm of a modified form of the ratio $H_n/H_a$ then generates a test statistic $LR_{h}$ that existing literature shows is governed by a chi-squared distribution with degrees of freedom proportional to the dimensionality $k$ of the data.
+From simulations of this distribution, we can generate a critical value given some $\alpha$ against which to compare this test statistic to determine whether a change point actually exists at some time $h$.
+
+\section{Algorithm}
+
+Given some time-series data $\tilde{y}_t$ and confidence $\alpha$, we use the following algorithm to identify points of change in covariance:
+
+\begin{function}[H]
+	\SetAlgoLined
+	fit VARIMA$(p, d', q)$ model to $\tilde{y}_t$ \;
+	compute residuals $\hat e_t$ \;
+	\BlankLine
+	$k \gets$ dimension($\tilde{y}_t$) \;
+	$d \gets k(p + q + 1) + \frac{k(k+1)}{2} + 1$ \tcc*[r]{minimum points needed} 
+	$n \gets$ len$(\tilde{y}_t)$ \;
+	$df \gets \frac{k(k+1)}{2}$ \tcc*[r]{degrees of freedom for $\chi^2$} 
+	\BlankLine
+	$C \gets $ simulateChiSquareMax$(df, \alpha)$ \tcc*[r]{obtain the critical value} 
+	\BlankLine
+	$LR \gets $ zeros$(n)$ \;
+	$S \gets \frac{1}{n} \Sigma_{i=1}^n e_i \cdot e_i'$ \;
+	\For{$h \in [d, n-d-1]$}{
+		$v \gets h / n$ \;
+		$S_1 \gets \frac{1}{h} \Sigma_{i=1}^h e_i \cdot e_i'$ \;
+		$S_2 \gets \frac{1}{n-h} \Sigma_{i=h+1}^n e_i \cdot e_i'$ \;
+		$LR[h] \gets n \ln \frac{|S|}{|S_1|^v |S_2|^{1-v}}$ \;
+	}
+	\BlankLine
+	$h_{max} \gets argmax_h(LR) $ \;
+	$\Lambda_{max} \gets LR[h_{max}]$ \;
+	\BlankLine
+	changePoints $\gets [\;]$ \;
+	\If{$\Lambda_{max} > C$}{
+		changePoints += $ h_{max}$ \;
+		\BlankLine
+		$W \gets$ transformation governing new data regime (see \cite{galeano2007covariance})\;
+		changePoints += apply LRT to $\hat{e}_t[0:h_{max}]$ \;
+		changePoints += apply LRT to $W \cdot \hat{e}_t[h_{max}+1:n]$ \;
+	}
+	\BlankLine
+	return changePoints
+ \caption{LRT($\tilde{y}_t, \alpha$) Algorithm by Galeano and Pe\~{n}a \cite{galeano2007covariance}}
+\end{function}
+
+\subsection{Implementation Details}
+
+To implement LRT, we used Python and Scikit's statsmodels package for fitting data to VAR() models.
+One should note this restriction to VAR() models is a result of an existing constraint in the statsmodels package. 
+
+We also implemented a version of the LRT algorithm that does not rely on calculating the $W$ transformation matrix.
+Rather than evaluating $W$, we leveraged statsmodels and its maximum likelihood estimation to fit the data to two new VAR() models for each regime.
+The above algorithm performs better than this secondary implementation because it obviates the need for separate rounds of maximum likelihood estimation for each level of recursion.
+
+\bibliographystyle{abbrv}
+\bibliography{sources}
+
+\end{document}
+
