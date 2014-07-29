@@ -35,9 +35,11 @@
 
 \section{Framework of the solution}
 
-Suppose $\set{\yy(t)}_{t=1}^T\subset\RR^d$ is a $d$-dimensional time series and let $\YY(t)\in\RR^{dk}$ be a $k$-long subsequence of the data beginning at time $t$:
-$$\YY(t):=\bkt{\yy(t)^\top, \yy(t+1)^\top, \ldots, \yy(t+k-1)^\top}^\top,$$
-i.e., $\YY(t)$ is the concatenation of the $k$ vectors $\yy(t),\ldots,\yy(t+k-1)$. Rather than consider the ``feature space'' or ``state space'' $\RR^d$, i.e., the space in which the datapoints live, we will consider the space $\RR^{dk}$ in which the subequences $\YY(t)$ live, since these subsequences can describe some of the temporal structure of the time series that points in $\RR^d$ cannot.
+The following online changepoint detection algorithm was designed by Kawahara and Sugiyama \cite{kawahara2012sequential}.
+
+Suppose $\set{\yy(t)}_{t=1}^T\subset\RR^k$ is a $k$-dimensional time series and let $\YY(t)\in\RR^{km}$ be an $m$-long subsequence of the data beginning at time $t$:
+$$\YY(t):=\bkt{\yy(t)^\top, \yy(t+1)^\top, \ldots, \yy(t+m-1)^\top}^\top,$$
+i.e., $\YY(t)$ is the concatenation of the $m$ vectors $\yy(t),\ldots,\yy(t+m-1)$. Rather than consider the ``feature space'' or ``state space'' $\RR^k$, i.e., the space in which the datapoints live, we will consider the space $\RR^{km}$ in which the subequences $\YY(t)$ live, since these subsequences can describe some of the temporal structure of the time series that points in $\RR^k$ cannot.
 
 This online algorithm makes use of a sliding window. Divide the sliding window into two intervals, one before the possible changepoint called the reference interval and one after the possible changepoint called the test interval. Denote the beginnings of the reference and test intervals by $t_\rf$ and $t_\te$, respectively, and denote their lengths by $n_\rf$ and $n_\te$. If $t$ is the current time, i.e., the front of the sliding window, then $t=t_\te+n_\te$ and $t_\te=t_\rf+n_\rf$. Define $\YY_\rf(i)=\YY(t_\rf+i-1)$ and $\YY_\te(i)=\YY(t_\te+i-1)$. Let $p_\rf$ and $p_\te$ be the probability densities of the reference and test intervals, respectively.
 
@@ -60,9 +62,9 @@ then we say that tme $t_\te$ is a changepoint.
 
 \section{Directly estimating the density ratio}
 
-Rather than estimate the density ratio $w:=\frac{p_\te}{p_\rf}$ by first individually estimating the densities $p_\te$ and $p_\rf$ and then dividing, the ratio itself will be directly estimated by employing the Kullback-Leibler Importance Estimation Procedure (KLIEP) developed by Sugiymama, et. al. [cite!].
+Rather than estimate the density ratio $w:=\frac{p_\te}{p_\rf}$ by first individually estimating the densities $p_\te$ and $p_\rf$ and then dividing, the ratio itself will be directly estimated by employing the Kullback-Leibler Importance Estimation Procedure (KLIEP) developed by Sugiymama et al. \cite{sugiyama2008direct}.
 
-Suppose the estimate $\hat w$ lives in a finite-dimensional function space spanned by the basis functions $\set{\phi_\ell}_{\ell=1}^b$,  where $\phi_\ell\colon\RR^{dk}\to\RR^+$ for all $\ell$. Then $\hat w(\cdot)=\sum_{\ell=1}^b\alpha_\ell\phi_\ell(\cdot)$, and so the parameters we want to learn are the coordinates $\set{\alpha_\ell}_{\ell=1}^b$. We do so by minimizing the Kullback-Leibler divergence of $\hat p_\te=p_\rf\hat w$ from the true distribution $p_\te$, i.e.,
+Suppose the estimate $\hat w$ lives in a finite-dimensional function space spanned by the basis functions $\set{\phi_\ell}_{\ell=1}^b$,  where $\phi_\ell\colon\RR^{km}\to\RR^+$ for all $\ell$. Then $\hat w(\cdot)=\sum_{\ell=1}^b\alpha_\ell\phi_\ell(\cdot)$, and so the parameters we want to learn are the coordinates $\set{\alpha_\ell}_{\ell=1}^b$. We do so by minimizing the Kullback-Leibler divergence of $\hat p_\te=p_\rf\hat w$ from the true distribution $p_\te$, i.e.,
 $$D_{KL}(p_\te\|\hat p_\te)=\int p_\te(\YY)\log\frac{p_\te(\YY)}{p_\rf(\YY)\hat w(\YY)}\,d\YY.$$
 The minimization problem is subject to two constraints. First, $w$ is nonnegative: requiring $\alpha_\ell\ge0$ for all $\ell$ implies $\hat w\ge0$. Second, $p_\te$ is a probability density and therefore integrates to 1: the same should hold for $p_\rf\hat w$. Approximation reduces this constrained minimization problem, which is convex, to the following maximization problem:
 \begin{align*}
@@ -77,16 +79,15 @@ It follows that $b=n_\te$. The rationale for centering kernels on the test point
 
 The kernel parameter $\sigma$ is selected by cross-validation. The maximization problem is solved by gradient ascent.
 
-\section{Updating $\set{\alpha_\ell}$ online}
+\section{Updating the parameters $\set{\alpha_\ell}$ online}
 
 Kawahara and Sugiyama propose a way to update $\set{\alpha_\ell}$ in an online manner rather than repeating the above procedure with every new datapoint.
 
-Let $\YYY_\te=\set{\YY_\te(i)}_{i=1}^{n_\te}$ be the set of test subsequences. Since the Gaussian kernel $K_\sigma\colon\YYY_\te\times\YYY_\te\to\RR^+$ is a positive definite kernel, %proof?
-we have by the Moore-Aronszajn theorem that there exists a unique Hilbert space $\HH$ of functions on $\YYY_\te$ with $K_\sigma$ as the reproducing kernel. Moreover, the span of $\set{K_\sigma(\cdot,\YY))}_{\YY\in\YYY_\te}$ is dense in $\HH$, so if $w\in\HH$, then $\hat w$ can approximate $w$ arbitrarily well. This somewhat justifies our previous assumption that $\hat w$ lives in the span of $\set{K_\sigma(\cdot,\YY))}_{\YY\in\YYY_\te}$.
+Let $\YYY_\te=\set{\YY_\te(i)}_{i=1}^{n_\te}$ be the set of test subsequences. Since the Gaussian kernel $K_\sigma\colon\YYY_\te\times\YYY_\te\to\RR^+$ is a positive definite kernel, we have by the Moore-Aronszajn theorem that there exists a unique Hilbert space $\HH$ of functions on $\YYY_\te$ with $K_\sigma$ as the reproducing kernel \cite{berlinet2004reproducing}. Moreover, the span of $\set{K_\sigma(\cdot,\YY))}_{\YY\in\YYY_\te}$ is dense in $\HH$, so if $w\in\HH$, then $\hat w$ can approximate $w$ arbitrarily well. This partially justifies our previous assumption that $\hat w$ lives in the span of $\set{K_\sigma(\cdot,\YY))}_{\YY\in\YYY_\te}$. 
 
 We choose to minimize the regularized risk functional
 $$E_i(\hat w)=-\log\hat w(\YY_\te(i))+\frac{\lambda}{2}\|\hat w\|_\HH^2$$
-over the span of $\set{K_\sigma(\cdot,\YY)}_{\YY\in\YYY_\te}$, where $-\log\hat w(\YY_\te(i))$ is the loss function, $\frac\lambda2\|\hat w\|_\HH^2$ is the regularization term, and $\|\cdot\|_\HH$ is the norm in $\HH$. Rather than minimize the average regularized risk $\frac{1}{n_\te}\sum_{i=1}^{n_\te}E_i(\hat w)$, we follow the method of stochastic gradient descent [cite!] and minimize the regularized risk $E_{n_\te+1}$ at only the new training example.
+over the span of $\set{K_\sigma(\cdot,\YY)}_{\YY\in\YYY_\te}$, where $-\log\hat w(\YY_\te(i))$ is the loss function, $\frac\lambda2\|\hat w\|_\HH^2$ is the regularization term, and $\|\cdot\|_\HH$ is the norm in $\HH$. Rather than minimize the average regularized risk $\frac{1}{n_\te}\sum_{i=1}^{n_\te}E_i(\hat w)$, we follow the method of stochastic gradient descent in a function space \cite{kivinen2001online} and minimize the regularized risk $E_{n_\te+1}$ at only the new training example.
 
 Before differentiating the regularized risk with respect to the function $\hat w$, we note a few useful derivatives. Let $e_\YY(\hat w):=\hat w(\YY)$ be the evaluation functional at $\YY$. Since $K_\sigma$ is a reproducing kernel, we have by definition that
 $$\langle\hat w(\cdot),K_\sigma(\cdot,\YY)\rangle=\hat w(\YY)=e_\YY(\hat w).$$
@@ -99,15 +100,39 @@ $$\partial_{\hat w}\prn{-\log\hat w(\YY)}
 =-\frac{K_\sigma(\cdot,\YY)}{\log \hat w(\YY)}.
 $$
 We also note that
-$$\partial_{\hat w}\prn{\frac12\|\hat w\|^2}=\hat w.$$
+$\partial_{\hat w}\prn{\frac12\|\hat w\|^2}=\hat w.$
 Putting these together, we find that
-$$\partial_{\hat w}E_i(\hat w)=-\frac{K_\sigma(\cdot,\YY_\te(i))}{\log \hat w(\YY_\te(i))}+\lambda\hat w.$$
+$$\partial_{\hat w}E_i(\hat w)=-\frac{K_\sigma(\cdot,\YY_\te(i))}{\hat w(\YY_\te(i))}+\lambda\hat w.$$
 
+Denote the estimated density ratio after updating by $\hat w'(\cdot)=\sum_{i=1}^{n_\te}\alpha_\ell'K_\sigma(\cdot,\YY_\te(\ell+1))$, where kernels are placed on the $(\ell+1)$th test subsequence because the test interval moves one step forward after updaing. Then the update equation with learning rate $\eta$ is
+\begin{align*}
+  \hat w'
+  &=\hat w-\eta\partial_{\hat w}E_{n_\te+1}(\hat w)\\
+  &=\hat w-\eta\prn{-\frac{K_\sigma(\cdot,\YY_\te(n_\te+1))}{\hat w(\YY_\te(n_\te+1))}+\lambda\hat w}\\
+  &=(1-\eta\lambda)\hat w+\eta\frac{K_\sigma(\cdot,\YY_\te(n_\te+1))}{\hat w(\YY_\te(n_\te+1))}\\
+  \sum_{i=1}^{n_\te}\alpha_\ell'K_\sigma(\cdot,\YY_\te(\ell+1))
+  &=(1-\eta\lambda)\sum_{\ell=1}^{n_\te}\alpha_\ell K(\cdot,\YY_\te(\ell))+\eta\frac{K_\sigma(\cdot,\YY_\te(n_\te+1))}{\hat w(\YY_\te(n_\te+1))}.
+\end{align*}
+Matching the kernels on both sides of the equation gives
+\begin{align}
+  \label{eq:alpha1}
+  \alpha_\ell'K_\sigma(\cdot,\YY_\te(\ell+1))&=(1-\eta\lambda)\alpha_{\ell+1}K(\cdot,\YY_\te(\ell_1))\nonumber\\
+  \alpha_\ell'&=(1-\eta\lambda)\alpha_{\ell+1}
+\end{align}
+for $\ell=1,\ldots,n_\te-1$, and for $\ell=n_\te$, we have
+\begin{align}
+  \label{eq:alpha2}
+  \alpha_{n_\te}'K_\sigma(\cdot,\YY_\te(n_\te+1))&=\eta\frac{K_\sigma(\cdot,\YY_\te(n_\te+1))}{\hat w(\YY_\te(n_\te+1))}\nonumber\\
+  \alpha_{n_\te}'&=\frac{\eta}{\hat w(\YY_\te(n_\te+1))}.
+\end{align}
+Thus, at every time step, the parameters $\set{\alpha_\ell}$ are updated according to equations (\ref{eq:alpha1}) and (\ref{eq:alpha2}). Normalization is carried out with respect to the following contraint:
+$$\frac{1}{n_\rf}\sum_{t=1}^{n_\rf}\sum_{\ell=1}^{n_\te}\alpha_\ell K_\sigma(\YY_\rf(t+1),\YY_\te(\ell+1))=1.$$
 
+\section{Algorithm}
 
+The algorithm first uses cross-validation to select the optimal $\sigma$ of the Gaussian kernel. The offline KLIEP is then performed on the first frame of the sliding window to estimate the density ratio $w$. At each new time step, the parameters $\set{\alpha_\ell}$ of the estimate $\hat w$ are updated online. If at any point the score $S$ exceeds some threshold, then a changepoint is detected at time $t_\te$. The sliding window then advances so that back of the window $t_\rf$ becomes the front of the old window $t_\te+n_\te$. This algorithm proceeds until we run out of data. The details of this algorithm are discussed in four separate algorithms in Kawahara and Sugiyama's paper.
 
-
-
-
+\bibliographystyle{abbrv}
+\bibliography{sources}
 
 \end{document}
