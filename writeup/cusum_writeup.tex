@@ -1,0 +1,123 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{mathrsfs}
+\usepackage[ruled]{algorithm2e}
+
+\newcommand\prn[1]{\left( #1 \right)}
+\newcommand\bkt[1]{\left[ #1 \right]}
+\newcommand\set[1]{\left\{ #1 \right\}}
+\newcommand\abs[1]{\left| #1 \right|}
+\renewcommand\epsilon{\varepsilon}
+\newcommand\aaa{\boldsymbol{a}}
+\newcommand\ee{\boldsymbol{e}}
+\newcommand\RR{\mathbb{R}}
+\newcommand\yy{\boldsymbol{y}}
+\newcommand\hfirst{{h_{\mathrm{first}}}}
+\newcommand\hlast{{h_{\mathrm{last}}}}
+\DeclareMathOperator*{\argmax}{\arg\!max}
+
+\SetVline
+
+\pagestyle{empty}
+
+\frenchspacing
+
+\title{\normalsize\sc Description of Galeano and Pe\~{n}a's covariance changepoint detection algorithm based on cusum statistic}
+\author{\normalsize Christopher Natoli}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Formulating the test statistic}
+
+The following changepoint detection algorithm, which focuses on changes in the covariance matrix, was designed by Galeano and Pe\~{n}a \cite{galeano2007covariance}.
+
+Suppose the $k$-dimensional time series $\yy_t$ can be represented as a VARIMA process
+$$\Phi(B)\yy_t=\boldsymbol{c}+\Theta(B)\aaa_t,$$
+where $B$ is the backshift operator and the error or innovation $\aaa_t$ is an iid Gaussian random variable with mean $\boldsymbol{0}$ and covariance matrix $\Sigma_i$, where $i$ indicates the particular regime.
+
+The cusum test statistic is derived from accumulating the sum of squared errors. Since we do not know the true errors $\aaa_t$, we first fit a VARIMA process $\hat\yy_t$ to the time series $\yy_t$ and use the residuals $\ee_t=\yy_t-\hat\yy_t$ as estimates for the errors. Consider the interval $\set{\ell,\ldots, r}$. We can estimate the covariance matrix of the time series in this interval by
+$$\hat\Sigma_\ell^r=\frac{1}{r-\ell}\sum_{t=\ell}^r\ee_t\ee_t^\top.$$
+Denote the sum of squares accumulated up to time $h$ by
+$$A_\ell^r(h)=\sum_{t=\ell}^h\ee_t^\top\prn{\hat\Sigma_\ell^r}^{-1}\ee_t,$$
+where the squared errors are in some sense normalized by the empirical covariance $\hat\Sigma_\ell^r$ of the entire interval.
+
+The cusum test statistic for a changepoint at time $h+1$ is then
+$$C_\ell^r(h)=\frac{h}{\sqrt{2k(r-\ell+1)}}\prn{\frac{A_\ell^r(h)}{h}-\frac{A_\ell^r(r-\ell+1)}{r-\ell+1}}.$$
+The term outside the parentheses is another normalization factor. The left-hand term inside the parentheses is the cumulative sum of squares up to time $h$. The right-hand term inside the parentheses is the cumulative sum of squares for the entire interval $\set{\ell,\ldots,r}$. The test statistic $C_\ell^r(h)$ compares these latter two terms. For example, if there is no changepoint in $\set{\ell,\ldots,r}$, then $\frac{A_\ell^r(h)}{h}$ and $\frac{A_\ell^r(r-\ell+1)}{r-\ell+1}$ will be approximately equal. However, if there is a single changepoint at time $t=h+1$, then the left-hand term is the sum of squares for all of the first regime (and only the first regime), while the right-hand term is the sum of squares over the entirety of both regimes. This suggests that the cumulative sums of squares are most different, and thus $C_\ell^r(h)$ is greatest in magnitude, at the changepoint $t=h+1$.
+
+This observation is confirmed by plotting $\abs{C_\ell^r(h)}$ vs. $h$ for simulated data. Therefore, let
+\begin{align*}
+\Gamma_\ell^r&=\max_{h\in\set{\ell,\ldots,r}}|C_\ell^r(h)|\\
+\bar h_\ell^r&=\argmax_{h\in\set{\ell,\ldots,r}}|C_\ell^r(h)|.
+\end{align*}
+Galeano and Pe\~{n}a prove that $\Gamma_\ell^r$ asymptotically has the distribution of the supremum over $[0,1]$ of a Brownian bridge. This is a known distribution, allowing us to calculate the critical value $C_\alpha$ for any given significance level $\alpha$.
+
+\section{Algorithm for finding multiple changepoints}
+
+The approach to finding multiple changepoints is similar to binary segmentation. Let $d=k(p+q+1)+\frac{k(k+1)}{2}+1$ be the resolution of the changepoint detection algorithm. First fit a VARIMA model to the data and computing the residuals. Then let $\hfirst=1+d$ and $\hlast=T-d$, the final time step. Search for a changepoint in $\set{\hfirst,\ldots,\hlast}$ by checking if $\Gamma_\hfirst^\hlast$ exceeds the critical value. Let $\bar h_{\mathrm{old}}=\bar h_\hfirst^\hlast$.
+
+If a candidate is found, split the entire time series at the time $t_2=\bar h_{\mathrm{old}}$ of the candidate changepoint. Check $\Gamma_\hfirst^{t_2}$ if greater than the critical value; if so, redefine $t_2$ as $\bar h_\hfirst^{t_2}$. Repeat until $\Gamma_\hfirst^{t_2}$ is no longer significant. This procedure thus finds the earliest point in the time series at which a changepoint could occur. Redefine $\hfirst$ as the last significant value of $\bar h_\hfirst^{t_2}$. Perform the same procedure over the interval $\set{\bar h_{\mathrm{old}},\ldots,\hlast}$, acquiring a new $\hlast$ as the latest point in the time series at which a changepoint could occur. If $\abs{\hfirst-\hlast}<d$, i.e., the resolution of the algorithm is not high enough to distinguish between $\hfirst$ and $\hlast$, then record $\bar h_{\mathrm{old}}$ as a candidate changepoint. Otherwise, record both $\hfirst$ and $\hlast$ as candidate changepoints. Then repeat this procedure in the narrower interval $\set{\hfirst,\ldots,\hlast}$. Thus, rather than continually cutting the interval in two and repeating the procedure in each part, the algorithm instead narrows down the interval in which changepoints can occur, using previous changepoints as the new endpoints of the narrower interval.
+
+The algorithm ends up find excess candidates. To solve this retrospectively, let $x_1=1$, $x_s=T$, and $\set{x_2,\ldots,x_{s-1}}$ be the sorted list of candidate changepoints. In each interval $\set{x_i+1,\ldots,x_{i+2}-1}$, drop $x_i$ from the list of candidates if $\Gamma_{x_i+1}^{x_{i+2}-1}$ is insignificant. Repeat this procedure until convergence. Then remove $x_1$ and $x_s$ from the list of candidate changepoints. Denote the winnowed list of candidates by $X$. Then the final changepoints detected by the algorithm are $\set{x+1:x\in X}$.
+
+The entire procedure is detailed more explicitly in Algorithm \ref{alg:cusum}.
+
+\begin{algorithm}[H]
+  \label{alg:cusum}
+  \nlset{Step 1}fit VARIMA model to $\yy_t$\;
+  compute residuals $\ee_t$\;
+  $candidates\gets\set{1,T}$\;
+  $\hfirst\gets 1+d$;\quad$\hlast\gets T-d$\;
+  \While{True}{
+    \nlset{Step 2}\eIf{$\Gamma_\hfirst^\hlast<C_\alpha$}{
+      break\;
+    }{
+      $\Gamma_{\mathrm{old}}\gets\Gamma_\hfirst^\hlast$;\quad$\bar h_{\mathrm{old}}\gets\bar h_\hfirst^\hlast$\;
+      $\Gamma\gets\Gamma_{\text{old}}$;\quad$\bar h\gets\bar h_{\text{old}}$\;
+      \nlset{Step 3a}\While{$\Gamma>C_\alpha$}{
+        $t_2\gets\bar h-1$\;
+        $\Gamma=\Gamma_{\hfirst}^{t_2}$\;
+      }
+      $\hfirst\gets t_2$\;
+      $\Gamma\gets\Gamma_{\text{old}}$;\quad$\bar h\gets\bar h_{\text{old}}$\;
+      \nlset{Step 3b}\While{$\Gamma>C_\alpha$}{
+        $t_1\gets\bar h+1$\;
+        $\Gamma=\Gamma_{t_1}^{\hlast}$\;
+      }
+      $\hlast\gets t_1$\;
+      \nlset{Step 3c}\eIf{$|\hlast-\hfirst|>d$}{
+        append $\hfirst, \hlast$ to $candidates$\;
+        $\hfirst=\hfirst+d$;\quad$\hlast=\hlast-d$\;
+      }{
+        append $\bar h_{\text{old}}$ to $candidates$\;
+        break\;       
+      }
+    }
+  }
+  sort $candidates$\;
+  $\set{x_1,\ldots,x_s}\gets candidates$\;
+  \nlset{Step 4}\Repeat{convergence}{
+    \For{$i\in\set{1,\ldots,s-2}$}{
+      \If{$\Gamma_{x_i+1}^{x_{i+2}-1}<C_\alpha$}{
+        remove $x_{i+1}$ from $candidates$\;
+      }
+    }
+  }
+  remove $1,T$ from $candidates$\;
+  $changepoints\gets\set{x+1:x\in candidates}$\;
+ \caption{Cusum algorithm by Galeano and Pe\~na. The four steps correspond to Galeano and Pe\~na's enumeration.}
+\end{algorithm}
+
+\bibliographystyle{abbrv}
+\bibliography{sources}
+
+\end{document}
