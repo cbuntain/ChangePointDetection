@@ -45,7 +45,7 @@ def eigenDecomp(data):
 
     return pd.DataFrame(newData)
 
-def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625, useCov=False, verbose=False):
+def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625, useCov=False, useEigen=False, useProj=False, verbose=False):
 
     kcdStat = []
     changePoints = []
@@ -63,14 +63,16 @@ def kernelChangeDetection(df, d=50, eta=0.4, gamma=0.25, nu=0.0625, useCov=False
 
         # This seems to work the best for cov
         if ( useCov == True ):
-            leftData = convertDataToCov(leftData, windowSize=d/2)
-            rightData = convertDataToCov(rightData, windowSize=d/2)
+            leftData = convertDataToCov(leftData, windowSize=30)
+            rightData = convertDataToCov(rightData, windowSize=30)
 
-        # leftData = projectToCov(leftData)
-        # rightData = projectToCov(rightData)
+        if ( useProj == True ):
+            leftData = projectToCov(leftData)
+            rightData = projectToCov(rightData)
 
-        # leftData = eigenDecomp(leftData)
-        # rightData = eigenDecomp(rightData)
+        if ( useEigen == True ):
+            leftData = eigenDecomp(leftData)
+            rightData = eigenDecomp(rightData)
 
         leftSvm = svm.OneClassSVM(nu=nu, kernel="rbf", gamma=gamma)
         rightSvm = svm.OneClassSVM(nu=nu, kernel="rbf", gamma=gamma)

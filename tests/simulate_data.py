@@ -30,7 +30,7 @@ def simulateVAR(n, numChanges, phis, mean, covChange=lambda sigma, i: sigma, mea
 
             try:
                 M = np.random.rand(k, k)
-                M = M + M.T + k * np.identity(k)
+                M = M + M.T + (np.random.randint(k)+k) * np.identity(k)
                 # M = 3**(i+1) * M # Increase the covariance after each changepoint.
                 M = covChange(M, i)
                 np.linalg.cholesky(M) # Check that M is symmetric positive semidefinite.

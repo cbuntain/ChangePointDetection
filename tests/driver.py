@@ -76,7 +76,7 @@ def lrtWrapper(data):
 def kcdWrapper(data):
 
 	# These settings worked well for mean shifts
-	(changePoints, stats) = kernelChangeDetection(data, eta=0.7, d=50, gamma=0.005, nu=0.75)
+	(changePoints, stats) = kernelChangeDetection(data, d=200, eta=0.7, gamma=0.005, nu=0.001, useCov=True)
 
 	# DO NOT UNCOMMENT THIS IF YOU RUN THIS FUNCTION AS A THREAD!1
 	# import pylab as pl
@@ -118,12 +118,13 @@ logger.addHandler(fh)
 
 
 # Tunable parameters for testing
-n = 1000
-runs = 100
-kRange = (2,10)
-# kRange = (2,2)
-cpRange = (0,4)
-# cpRange = (1,2)
+# n = 1000
+n = 500
+runs = 10
+#kRange = (2,12)
+kRange = (2,2)
+cpRange = (1,1)
+#cpRange = (3,3)
 varOrder = 1
 
 logger.info("n: %d", n)
@@ -193,10 +194,15 @@ for i in range(runs):
 		Phis = PhiList
 		
 		mean = np.random.random_integers(100, size=(k,))
+		mean2 = np.random.random_integers(100, size=(k,))
+		mean3 = np.random.random_integers(100, size=(k,))
+
+		sigma = np.random.rand(k, k)
+		sigma = sigma + sigma.T + (np.random.randint(k)+k) * np.identity(k)
 
 		(data, covariances, wMatrices, changePts) = simulateVAR(n, numChanges, PhiList, mean, \
-			covChange=lambda s, i: s, \
-			meanShift=lambda mu, i: (i+1)*mu)
+			covChange=lambda s, i: sigma, \
+			meanShift=lambda mu, i: mu) #(i*10)*mu + mu
 
 		logger.info("Mean: %s", mean.__str__())
 		logger.info("Change Points: %s", changePts.__str__())
@@ -227,11 +233,14 @@ for i in range(runs):
 	paramMap["k"] = k
 	paramMap["changePointCount"] = numChanges
 	paramMap["changePoints"] = changePts
-	paramMap["mean"] = mean.tolist()
-	paramMap["phis"] = [x.tolist() for x in Phis]
-	paramMap["cov"] = covariances.tolist()
+	# paramMap["mean"] = mean.tolist()
+	# paramMap["phis"] = [x.tolist() for x in Phis]
+	# paramMap["cov"] = covariances.tolist()
 
 	df = pd.DataFrame(data)
+
+	# kcdDetector(df)
+	# exit(1)
 
 	cusumThread = pool.apply_async(cusumDetector, (df, ))
 	lrtThread = pool.apply_async(lrtDetector, (df, ))
